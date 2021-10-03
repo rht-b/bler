@@ -1,0 +1,10 @@
+project
+project.tar.gz
+project2.tar.gz
+a.out
+data/*
+data_*
+myping
+pairwise_latencies/latencies*
+setup_config.jsoni
+__pycache__

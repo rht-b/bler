@@ -1,0 +1,15 @@
+obj/
+nbproject/
+LEGOStore
+db*.temp/
+lib/
+CASClient
+CASServer
+Client
+Controller
+Server
+Metadata_Server
+*.txt
+logs/*
+knossos
+.idea
