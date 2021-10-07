@@ -50,6 +50,12 @@ int ABD_Server::put_data(const std::string& key, const strVec& value){
     return S_OK;
 }
 
+int ABD_Server::remove_data(const std::string& key){
+    cache_p->erase(key);
+    persistent_p->erase(key);
+    return S_OK;
+}
+
 strVec ABD_Server::init_key(const std::string& key, const uint32_t conf_id){
 
     DPRINTF(DEBUG_ABD_Server, "started.\n");
@@ -64,7 +70,6 @@ strVec ABD_Server::init_key(const std::string& key, const uint32_t conf_id){
 std::string ABD_Server::get_timestamp(const std::string& key, uint32_t conf_id){
 
     DPRINTF(DEBUG_ABD_Server, "started.\n");
-//    lock_guard<mutex> lock(*mu_p);
     lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
 
     string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id); // Construct the unique id for the key
@@ -81,14 +86,14 @@ std::string ABD_Server::get_timestamp(const std::string& key, uint32_t conf_id){
         return DataTransfer::serialize({"OK", data[2]});
     }
     else{ // Key reconfigured
-        return DataTransfer::serialize({"operation_fail", data[4]});
+        assert(false);
+        // return DataTransfer::serialize({"operation_fail", data[4]});
     }
 }
 
 std::string ABD_Server::put(const std::string& key, uint32_t conf_id, const std::string& value, const std::string& timestamp){
 
     DPRINTF(DEBUG_ABD_Server, "started.\n");
-//    lock_guard<mutex> lock(*mu_p);
     lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
 
     string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id);
@@ -111,24 +116,24 @@ std::string ABD_Server::put(const std::string& key, uint32_t conf_id, const std:
         return DataTransfer::serialize({"OK"});
     }
     else{ // Key reconfigured
-        if(!(Timestamp(timestamp) > Timestamp(data[3]))){
-            if(Timestamp(timestamp) > Timestamp(data[2])){
-                data[0] = value;
-                data[2] = timestamp;
-                put_data(con_key, data);
-            }
-            return DataTransfer::serialize({"OK"});
-        }
-        else{
-            return DataTransfer::serialize({"operation_fail", data[4]});
-        }
+        assert(false);
+        // if(!(Timestamp(timestamp) > Timestamp(data[3]))){
+        //     if(Timestamp(timestamp) > Timestamp(data[2])){
+        //         data[0] = value;
+        //         data[2] = timestamp;
+        //         put_data(con_key, data);
+        //     }
+        //     return DataTransfer::serialize({"OK"});
+        // }
+        // else{
+        //     return DataTransfer::serialize({"operation_fail", data[4]});
+        // }
     }
 }
 
 std::string ABD_Server::get(const std::string& key, uint32_t conf_id){
 
     DPRINTF(DEBUG_ABD_Server, "started.\n");
-    //    lock_guard<mutex> lock(*mu_p);
     lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
 
     string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id); // Construct the unique id for the key
@@ -144,6 +149,32 @@ std::string ABD_Server::get(const std::string& key, uint32_t conf_id){
         return DataTransfer::serialize({"OK", data[2], data[0]});
     }
     else{ // Key reconfigured
-        return DataTransfer::serialize({"operation_fail", data[4]});
+        assert(false);
+        // return DataTransfer::serialize({"operation_fail", data[4]});
+    }
+}
+
+std::string ABD_Server::clear_key(const std::string& key, uint32_t conf_id){
+
+    DPRINTF(DEBUG_ABD_Server, "started.\n");
+    lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
+
+    string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id); // Construct the unique id for the key
+
+    DPRINTF(DEBUG_ABD_Server, "clear_key started and the key is %s\n", con_key.c_str());
+
+    strVec data = get_data(con_key);
+    if(data.empty()){
+        DPRINTF(DEBUG_ABD_Server, "WARN: Key %s with confid %d was not found! Skipping...\n", key.c_str(), conf_id);
+    } else {
+        remove_data(con_key);
+    }
+
+    if(data[3] == ""){
+        return DataTransfer::serialize({"OK"});
+    }
+    else{ // Key reconfigured
+        assert(false);
+        // return DataTransfer::serialize({"operation_fail", data[4]});
     }
 }

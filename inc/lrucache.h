@@ -39,6 +39,12 @@ public:
 		std::cout<<"Successfully put the key into cache key :" <<key<<std::endl;
 		
 	}
+
+	void erase(const key_t& key) {
+		auto it = _cache_items_map.find(key);
+		_cache_items_list.erase(it->second);
+		_cache_items_map.erase(it);
+	}
 	
 	void evict(){
 		auto last = _cache_items_list.end();

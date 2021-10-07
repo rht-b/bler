@@ -19,7 +19,7 @@ DataServer::DataServer(string directory, int sock, string metadata_server_ip,
     for(int i = 0; i < MAX_KEY_NUMBER; i++){
         mu_p_vec[i].reset(new mutex);
     }
-DPRINTF(DEBUG_CAS_Server, "mutexes created\n");
+    DPRINTF(DEBUG_CAS_Server, "mutexes created\n");
 }
 
 strVec DataServer::get_data(const string& key){
@@ -40,150 +40,13 @@ int DataServer::put_data(const string& key, const strVec& value){
     return S_OK;
 }
 
-void DataServer::check_block_keys(const string& key, const string& curr_class, uint32_t conf_id){
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-    unique_lock<mutex> lock(this->blocked_keys_lock);
-
-    // See if the key is in block mode
-    string con_key = construct_key(key, curr_class, conf_id);
-    while(this->blocked_keys.find(con_key) != this->blocked_keys.end()){
-        this->blocked_keys_cv.wait(lock);
-    }
-
-    return;
-}
-
-void DataServer::add_block_keys(const string& key, const string& curr_class, uint32_t conf_id){
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-    unique_lock<mutex> lock(this->blocked_keys_lock);
-
-    string con_key = construct_key(key, curr_class, conf_id);
-//    assert(find(this->blocked_keys.begin(), this->blocked_keys.end(), con_key) == this->blocked_keys.end());
-    this->blocked_keys.insert(con_key);
-
-    return;
-}
-
-void DataServer::remove_block_keys(const string& key, const string& curr_class, uint32_t conf_id){
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-    unique_lock<mutex> lock(this->blocked_keys_lock);
-
-    string con_key = construct_key(key, curr_class, conf_id);
-    assert(this->blocked_keys.erase(con_key) == 1);
-    this->blocked_keys_cv.notify_all();
-
-    return;
-}
-
-string DataServer::reconfig_query(const string& key, const string& curr_class, uint32_t conf_id){
-
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-    add_block_keys(key, curr_class, conf_id);
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-        return CAS.get_timestamp(key, conf_id);
-    }
-    else if(curr_class == ABD_PROTOCOL_NAME){
-        return ABD.get(key, conf_id);
-    }
-    else{
-        assert(false);
-    }
-    return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
-}
-
-string DataServer::reconfig_finalize(const string& key, const string& timestamp, const string& curr_class, uint32_t conf_id){
-
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-        return CAS.get(key, conf_id, timestamp);
-    }else{
-        assert(false);
-    }
-    return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
-}
-
-string DataServer::reconfig_write(const string& key, const string& value, const string& timestamp, const string& curr_class,
-                                       uint32_t conf_id){
-
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-//        char bbuf[1024*128];
-//        int bbuf_i = 0;
-////        for(int t = 0; t < chunks.size(); t++){
-//        bbuf_i += sprintf(bbuf + bbuf_i, "write_config-%s-chunk = ", key.c_str());
-//        for(uint tt = 0; tt < value.size(); tt++){
-//            bbuf_i += sprintf(bbuf + bbuf_i, "%02X", value.at(tt) & 0xff);
-////                printf("%02X", chunks[t]->at(tt));
-//        }
-//        bbuf_i += sprintf(bbuf + bbuf_i, "\n");
-////        }
-//        printf("%s", bbuf);
-
-        CAS.put(key, conf_id, value, timestamp);
-        return CAS.put_fin(key, conf_id, timestamp);
-    }
-    else if(curr_class == ABD_PROTOCOL_NAME){
-        return ABD.put(key, conf_id, value, timestamp);
-    }
-    else{
-        assert(false);
-    }
-    return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
-}
-
-string DataServer::finish_reconfig(const string &key, const string &timestamp, const string& new_conf_id, const string &curr_class, uint32_t conf_id){
-
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-
-    // Add the reconfigured timestamp to the persistent storage here.
-    //    unique_lock<mutex> lock(mu);
-    unique_lock<mutex> lock(*(mu_p_vec.at(stoui(key))));
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-        string con_key = construct_key(key, CAS_PROTOCOL_NAME, conf_id);
-        strVec data = get_data(con_key);
-        if(data.empty()){
-            data = CAS.init_key(key, conf_id);
-        }
-        data[1] = timestamp;
-        data[2] = new_conf_id;
-        put_data(con_key, data);
-    }
-    else if(curr_class == ABD_PROTOCOL_NAME){
-        string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id);
-        strVec data = get_data(con_key);
-        if(data.empty()){
-            data = ABD.init_key(key, conf_id);
-        }
-        data[3] = timestamp;
-        data[4] = new_conf_id;
-        put_data(con_key, data);
-    }
-    else{
-        assert(false);
-    }
-    lock.unlock();
-
-    remove_block_keys(key, curr_class, conf_id);
-
-    return DataTransfer::serialize({"OK"});
-}
-
 int DataServer::getSocketDesc(){
     return sockfd;
 }
 
 string DataServer::get_timestamp(const string& key, const string& curr_class, uint32_t conf_id){
 
-    check_block_keys(key, curr_class, conf_id);
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-        return CAS.get_timestamp(key, conf_id);
-    }
-    else if(curr_class == ABD_PROTOCOL_NAME){
+    if(curr_class == ABD_PROTOCOL_NAME){
         return ABD.get_timestamp(key, conf_id);
     }
     else{
@@ -194,38 +57,8 @@ string DataServer::get_timestamp(const string& key, const string& curr_class, ui
 
 string DataServer::put(const string& key, const string& value, const string& timestamp, const string& curr_class, uint32_t conf_id){
 
-    check_block_keys(key, curr_class, conf_id);
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-        DPRINTF(DEBUG_CAS_Client, "ddddd\n");
-//        char bbuf[1024*128];
-//        int bbuf_i = 0;
-////        for(int t = 0; t < chunks.size(); t++){
-//        bbuf_i += sprintf(bbuf + bbuf_i, "%s-chunk = ", key.c_str());
-//        for(uint tt = 0; tt < value.size(); tt++){
-//            bbuf_i += sprintf(bbuf + bbuf_i, "%02X", value.at(tt) & 0xff);
-////                printf("%02X", chunks[t]->at(tt));
-//        }
-//        bbuf_i += sprintf(bbuf + bbuf_i, "\n");
-////        }
-//        printf("%s", bbuf);
-        return CAS.put(key, conf_id, value, timestamp);
-    }
-    else if(curr_class == ABD_PROTOCOL_NAME){
+    if(curr_class == ABD_PROTOCOL_NAME){
         return ABD.put(key, conf_id, value, timestamp);
-    }
-    else{
-        assert(false);
-    }
-    return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
-}
-
-string DataServer::put_fin(const string& key, const string& timestamp, const string& curr_class, uint32_t conf_id){
-
-    check_block_keys(key, curr_class, conf_id);
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-        return CAS.put_fin(key, conf_id, timestamp);
     }
     else{
         assert(false);
@@ -235,12 +68,7 @@ string DataServer::put_fin(const string& key, const string& timestamp, const str
 
 string DataServer::get(const string& key, const string& timestamp, const string& curr_class, uint32_t conf_id){
 
-    check_block_keys(key, curr_class, conf_id);
-
-    if(curr_class == CAS_PROTOCOL_NAME){
-        return CAS.get(key, conf_id, timestamp);
-    }
-    else if(curr_class == ABD_PROTOCOL_NAME){
+    if(curr_class == ABD_PROTOCOL_NAME){
         return ABD.get(key, conf_id);
     }
     else{
@@ -248,6 +76,149 @@ string DataServer::get(const string& key, const string& timestamp, const string&
     }
     return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
 }
+
+string DataServer::clear_key(const string& key, const string& curr_class, uint32_t conf_id){
+
+    if(curr_class == ABD_PROTOCOL_NAME){
+        return ABD.clear_key(key, conf_id);
+    }
+    else{
+        assert(false);
+    }
+    return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
+}
+
+// void DataServer::check_block_keys(const string& key, const string& curr_class, uint32_t conf_id){
+//     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+//     unique_lock<mutex> lock(this->blocked_keys_lock);
+
+//     // See if the key is in block mode
+//     string con_key = construct_key(key, curr_class, conf_id);
+//     while(this->blocked_keys.find(con_key) != this->blocked_keys.end()){
+//         this->blocked_keys_cv.wait(lock);
+//     }
+
+//     return;
+// }
+
+// void DataServer::add_block_keys(const string& key, const string& curr_class, uint32_t conf_id){
+//     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+//     unique_lock<mutex> lock(this->blocked_keys_lock);
+
+//     string con_key = construct_key(key, curr_class, conf_id);
+// //    assert(find(this->blocked_keys.begin(), this->blocked_keys.end(), con_key) == this->blocked_keys.end());
+//     this->blocked_keys.insert(con_key);
+
+//     return;
+// }
+
+// void DataServer::remove_block_keys(const string& key, const string& curr_class, uint32_t conf_id){
+//     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+//     unique_lock<mutex> lock(this->blocked_keys_lock);
+
+//     string con_key = construct_key(key, curr_class, conf_id);
+//     assert(this->blocked_keys.erase(con_key) == 1);
+//     this->blocked_keys_cv.notify_all();
+
+//     return;
+// }
+
+// string DataServer::reconfig_query(const string& key, const string& curr_class, uint32_t conf_id){
+
+//     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+//     add_block_keys(key, curr_class, conf_id);
+
+//     if(curr_class == CAS_PROTOCOL_NAME){
+//         return CAS.get_timestamp(key, conf_id);
+//     }
+//     else if(curr_class == ABD_PROTOCOL_NAME){
+//         return ABD.get(key, conf_id);
+//     }
+//     else{
+//         assert(false);
+//     }
+//     return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
+// }
+
+// string DataServer::reconfig_finalize(const string& key, const string& timestamp, const string& curr_class, uint32_t conf_id){
+
+//     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+
+//     if(curr_class == CAS_PROTOCOL_NAME){
+//         return CAS.get(key, conf_id, timestamp);
+//     }else{
+//         assert(false);
+//     }
+//     return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
+// }
+
+// string DataServer::reconfig_write(const string& key, const string& value, const string& timestamp, const string& curr_class,
+//                                        uint32_t conf_id){
+
+//     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+
+//     if(curr_class == CAS_PROTOCOL_NAME){
+// //        char bbuf[1024*128];
+// //        int bbuf_i = 0;
+// ////        for(int t = 0; t < chunks.size(); t++){
+// //        bbuf_i += sprintf(bbuf + bbuf_i, "write_config-%s-chunk = ", key.c_str());
+// //        for(uint tt = 0; tt < value.size(); tt++){
+// //            bbuf_i += sprintf(bbuf + bbuf_i, "%02X", value.at(tt) & 0xff);
+// ////                printf("%02X", chunks[t]->at(tt));
+// //        }
+// //        bbuf_i += sprintf(bbuf + bbuf_i, "\n");
+// ////        }
+// //        printf("%s", bbuf);
+
+//         CAS.put(key, conf_id, value, timestamp);
+//         return CAS.put_fin(key, conf_id, timestamp);
+//     }
+//     else if(curr_class == ABD_PROTOCOL_NAME){
+//         return ABD.put(key, conf_id, value, timestamp);
+//     }
+//     else{
+//         assert(false);
+//     }
+//     return DataTransfer::serialize({"ERROR", "INTERNAL ERROR"});
+// }
+
+// string DataServer::finish_reconfig(const string &key, const string &timestamp, const string& new_conf_id, const string &curr_class, uint32_t conf_id){
+
+//     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+
+//     // Add the reconfigured timestamp to the persistent storage here.
+//     //    unique_lock<mutex> lock(mu);
+//     unique_lock<mutex> lock(*(mu_p_vec.at(stoui(key))));
+
+//     if(curr_class == CAS_PROTOCOL_NAME){
+//         string con_key = construct_key(key, CAS_PROTOCOL_NAME, conf_id);
+//         strVec data = get_data(con_key);
+//         if(data.empty()){
+//             data = CAS.init_key(key, conf_id);
+//         }
+//         data[1] = timestamp;
+//         data[2] = new_conf_id;
+//         put_data(con_key, data);
+//     }
+//     else if(curr_class == ABD_PROTOCOL_NAME){
+//         string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id);
+//         strVec data = get_data(con_key);
+//         if(data.empty()){
+//             data = ABD.init_key(key, conf_id);
+//         }
+//         data[3] = timestamp;
+//         data[4] = new_conf_id;
+//         put_data(con_key, data);
+//     }
+//     else{
+//         assert(false);
+//     }
+//     lock.unlock();
+
+//     remove_block_keys(key, curr_class, conf_id);
+
+//     return DataTransfer::serialize({"OK"});
+// }
 
 //bool Persistent_merge::Merge(const rocksdb::Slice& key, const rocksdb::Slice* existing_value,
 //                                 const rocksdb::Slice& value, std::string* new_value, rocksdb::Logger* logger) const {

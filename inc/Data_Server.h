@@ -26,16 +26,16 @@ public:
     
     std::string put(const std::string& key, const std::string& value, const std::string& timestamp, const std::string& curr_class, uint32_t conf_id);
     
-    std::string put_fin(const std::string& key, const std::string& timestamp, const std::string& curr_class, uint32_t conf_id);
-    
     std::string get(const std::string& key, const std::string& timestamp, const std::string& curr_class, uint32_t conf_id);
 
-    // Reconfig queries
-    std::string reconfig_query(const std::string& key, const std::string& curr_class, uint32_t conf_id);
-    std::string reconfig_finalize(const std::string& key, const std::string& timestamp, const std::string& curr_class, uint32_t conf_id);
-    std::string reconfig_write(const std::string& key, const std::string& value, const std::string& timestamp, const std::string& curr_class,
-            uint32_t conf_id);
-    std::string finish_reconfig(const std::string &key, const std::string &timestamp, const std::string& new_conf_id, const std::string &curr_class, uint32_t conf_id);
+    std::string clear_key(const std::string& key, const std::string& curr_class, uint32_t conf_id);
+
+    // // Reconfig queries
+    // std::string reconfig_query(const std::string& key, const std::string& curr_class, uint32_t conf_id);
+    // std::string reconfig_finalize(const std::string& key, const std::string& timestamp, const std::string& curr_class, uint32_t conf_id);
+    // std::string reconfig_write(const std::string& key, const std::string& value, const std::string& timestamp, const std::string& curr_class,
+    //         uint32_t conf_id);
+    // std::string finish_reconfig(const std::string &key, const std::string &timestamp, const std::string& new_conf_id, const std::string &curr_class, uint32_t conf_id);
 
 private:
     int sockfd;
@@ -52,12 +52,12 @@ private:
     int put_data(const std::string& key, const strVec& value);
 
     // Handling block mode of keys
-    std::unordered_set<std::string> blocked_keys;
-    std::mutex blocked_keys_lock;
-    std::condition_variable blocked_keys_cv;
-    void check_block_keys(const std::string& key, const std::string& curr_class, uint32_t conf_id); // It will block the caller thread until the key is removed from the recon state
-    void add_block_keys(const std::string& key, const std::string& curr_class, uint32_t conf_id);
-    void remove_block_keys(const std::string& key, const std::string& curr_class, uint32_t conf_id);
+    // std::unordered_set<std::string> blocked_keys;
+    // std::mutex blocked_keys_lock;
+    // std::condition_variable blocked_keys_cv;
+    // void check_block_keys(const std::string& key, const std::string& curr_class, uint32_t conf_id); // It will block the caller thread until the key is removed from the recon state
+    // void add_block_keys(const std::string& key, const std::string& curr_class, uint32_t conf_id);
+    // void remove_block_keys(const std::string& key, const std::string& curr_class, uint32_t conf_id);
 };
 
 //class Persistent_merge : public rocksdb::AssociativeMergeOperator{

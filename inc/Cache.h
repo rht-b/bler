@@ -15,6 +15,7 @@ public:
 
 	void put(const std::string& key, const std::vector<std::string>& value);
 	const std::vector<std::string>* get(const std::string& key);
+	void erase(const std::string& key);
 
 //	size_t get_current_size();
 //	bool exists(const std::string &key);
