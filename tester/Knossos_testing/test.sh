@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# cd /home/shahrooz/Desktop/PSU/Research/LEGOstore/tester
+# cd /home/ubuntu/bler/tester
 ./history_converter.py
 
 if [ ! -d "../../../knossos" ] 
 then
-	cd ../../../; git clone git@github.com:jepsen-io/knossos.git; cd LEGOstore/tester/Knossos_testing
+	cd ../../../; git clone git@github.com:jepsen-io/knossos.git; cd bler/tester/Knossos_testing
 fi
 
 rm -rf ../../../knossos/converted_logs
@@ -21,7 +21,7 @@ coutner=0
 number_of_files=0
 for f in $files
 do
-	output=`../../LEGOstore/tester/Knossos_testing/lein run --model cas-register $f 2> /dev/null | grep 'false'`
+	output=`../../bler/tester/Knossos_testing/lein run --model cas-register $f 2> /dev/null | grep 'false'`
 	if [ $? == 0 ]
 	then
 		filename=`awk -F/ '{print $NF}' < $f`
