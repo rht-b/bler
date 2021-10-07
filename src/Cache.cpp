@@ -9,7 +9,7 @@ Cache::Cache(size_t size) : max_size(size), curr_size(0), cache_obj(){
 void Cache::put(const std::string& key, const std::vector<std::string>& value){
     
     if(value.empty()){
-        std::cout << "Error ! emtpy insertion" << std::endl;
+        std::cout << "Error ! empty insertion" << std::endl;
         assert(false);
     }
 
@@ -49,4 +49,17 @@ size_t Cache::get_size(const std::vector<std::string>& value){
 const std::vector <std::string>* Cache::get(const std::string& key){
     std::lock_guard<std::mutex> lock(access_lock);
     return cache_obj.get(key);
+}
+
+void Cache::erase(const std::string& key){
+
+    std::lock_guard<std::mutex> lock(access_lock);
+
+    if(cache_obj.exists(key)){
+        size_t item_size = key.size() + get_size(*(cache_obj.get(key)));
+        curr_size -= item_size;
+
+        cache_obj.erase(key);
+    }
+
 }

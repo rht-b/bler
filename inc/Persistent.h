@@ -15,6 +15,7 @@ public:
     std::vector<std::string> get(const std::string& key);
     void put(const std::string& key, const std::vector<std::string>& value);
     void merge(const std::string& key, const std::vector<std::string>& value);
+    void erase(const std::string& key);
 
 private:
     rocksdb::DB* db;

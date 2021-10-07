@@ -75,6 +75,21 @@ void Persistent::merge(const std::string& key, const std::vector<std::string>& v
     }
 }
 
+void Persistent::erase(const std::string& key){
+    std::string value;
+    rocksdb::Status s = db->Get(rocksdb::ReadOptions(), key, &value);
+    
+    if(s.IsNotFound()){
+        DPRINTF(DEBUG_CAS_Server, "persisttent erase VALUE NOT FOUND! key is %s\n", key.c_str());
+    }
+    else{
+        DPRINTF(DEBUG_CAS_Server, "persisttent erase VALUE FOUND! key is %s :  and the value size is %zu\n", key.c_str(),
+                value.size());
+        s = db->Delete(rocksdb::WriteOptions(), key);
+        assert(s.ok());
+    }
+}
+
 //bool Persistent::exists(const std::string& key){
 //
 //    std::string _value;

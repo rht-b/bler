@@ -70,33 +70,10 @@ void message_handler(int connection, DataServer& dataserver, int portid, std::st
         result = DataTransfer::sendMsg(connection, dataserver.get_timestamp(data[1], data[2], stoul(data[3])));
         EASY_LOG_M("get_timestamp finished");
     }
-    else if(method == "put_fin"){
-        EASY_LOG_M("put_fin");
-        result = DataTransfer::sendMsg(connection, dataserver.put_fin(data[1], data[2], data[3], stoul(data[4])));
-        EASY_LOG_M("put_fin finished");
-    }
-    else if(method == "reconfig_query"){
-        EASY_LOG_M("reconfig_query");
-#ifdef CHANGE_THREAD_PRIORITY
-        increase_thread_priority();
-#endif
-        result = DataTransfer::sendMsg(connection, dataserver.reconfig_query(data[1], data[2], stoul(data[3])));
-        EASY_LOG_M("reconfig_query finished");
-    }else if(method == "reconfig_finalize"){
-        EASY_LOG_M("reconfig_finalize");
-        result = DataTransfer::sendMsg(connection, dataserver.reconfig_finalize(data[1], data[2], data[3], stoul(data[4])));
-        EASY_LOG_M("reconfig_finalize finished");
-    }else if(method == "reconfig_write"){
-        EASY_LOG_M("reconfig_write");
-        result = DataTransfer::sendMsg(connection, dataserver.reconfig_write(data[1], data[3], data[2], data[4], stoul(data[5])));
-        EASY_LOG_M("reconfig_write finished");
-    }else if(method == "finish_reconfig"){
-        EASY_LOG_M("finish_reconfig");
-        result = DataTransfer::sendMsg(connection, dataserver.finish_reconfig(data[1], data[2], data[3], data[4], stoul(data[5])));
-#ifdef CHANGE_THREAD_PRIORITY
-        increase_thread_priority(false);
-#endif
-        EASY_LOG_M("finish_reconfig finished");
+    else if(method == "clear_key"){
+        EASY_LOG_M(string("clear_key, The key is ") + data[1] + " class: " + data[2]);
+        result = DataTransfer::sendMsg(connection, dataserver.clear_key(data[1], data[2], stoul(data[3])));
+        EASY_LOG_M("clear_key finished");
     }
     else{
         EASY_LOG_M("MethodNotFound");

@@ -37,6 +37,7 @@ public:
     std::string get_timestamp(const std::string& key, uint32_t conf_id);
     std::string put(const std::string& key, uint32_t conf_id, const std::string& value, const std::string& timestamp);
     std::string get(const std::string& key, uint32_t conf_id);
+    std::string clear_key(const std::string& key, uint32_t conf_id);
 
     strVec init_key(const std::string& key, const uint32_t conf_id);
 
@@ -47,6 +48,7 @@ private:
 
     strVec get_data(const std::string& key);
     int put_data(const std::string& key, const strVec& value);
+    int remove_data(const std::string& key);
 };
 
 #endif /* ABD_Server_H */
