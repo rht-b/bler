@@ -45,17 +45,25 @@ public:
 //    static Placement deserializeCFG(std::string& data);
     
     
-    static std::string serializeMDS(const std::string& status, const std::string& msg, const std::string& key,
-                                    const uint32_t& curr_conf_id, const uint32_t& new_conf_id, const std::string& timestamp,
-                                    const Placement& placement);
+    static std::string serializeMDS(const std::string& status, 
+                                    const std::string& msg,
+                                    const uint32_t& curr_conf_id,
+                                    const Placement& placement,
+                                    const std::vector<std::string>& keys);
 
-    static std::string serializeMDS(const std::string& status, const std::string& msg, const std::string& key="",
-                                    const uint32_t& curr_conf_id=0, const uint32_t& new_conf_id=0, const std::string& timestamp="");
+    static std::string serializeMDS(const std::string& status, 
+                                    const std::string& msg,
+                                    const uint32_t& curr_conf_id=0);
 
-    static Placement deserializeMDS(const std::string& data, std::string& status, std::string& msg, std::string& key,
-                                    uint32_t& curr_conf_id, uint32_t& new_conf_id, std::string& timestamp);
+    static Placement deserializeMDS(const std::string& data, 
+                                    std::string& status, 
+                                    std::string& msg,
+                                    uint32_t& curr_conf_id, 
+                                    std::vector<std::string>& keys);
 
-    static Placement deserializeMDS(const std::string& data, std::string& status, std::string& msg);
+    static Placement deserializeMDS(const std::string& data, 
+                                    std::string& status, 
+                                    std::string& msg);
     
 };
 

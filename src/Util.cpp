@@ -867,6 +867,10 @@ std::string construct_key(const std::string& key, const std::string& protocol, c
 int ask_metadata(const std::string& metadata_server_ip, const std::string& metadata_server_port,
         const std::string& key, const uint32_t conf_id, uint32_t& requested_conf_id, uint32_t& new_conf_id,
         std::string& timestamp, Placement& p, uint32_t retry_attempts, uint32_t metadata_server_timeout){
+    
+    // not to be called from anywhere
+    assert(metadata_server_ip != "");
+
     DPRINTF(DEBUG_CLIENT_NODE, "started\n");
     int ret = 0;
     std::string status, msg;
@@ -885,7 +889,7 @@ int ask_metadata(const std::string& metadata_server_ip, const std::string& metad
     while(RAs--){
         std::promise<std::string> data_set;
         std::future<std::string> data_set_fut = data_set.get_future();
-        DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("ask", "", key, conf_id));
+        // DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("ask", "", key, conf_id));
         std::future<int> fut = std::async(std::launch::async, DataTransfer::recvMsg_async, *c, std::move(data_set));
 
         if(data_set_fut.valid()){
@@ -912,7 +916,7 @@ int ask_metadata(const std::string& metadata_server_ip, const std::string& metad
         msg.clear();
         std::string rec_key;
 
-        p = DataTransfer::deserializeMDS(recvd, status, msg, rec_key, requested_conf_id, new_conf_id, timestamp);
+        // p = DataTransfer::deserializeMDS(recvd, status, msg, rec_key, requested_conf_id, new_conf_id, timestamp);
 
         assert(key == rec_key);
         assert(status == "OK" || status == "WARN");

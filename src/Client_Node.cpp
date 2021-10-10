@@ -13,9 +13,10 @@
 
 #include "../inc/Client_Node.h"
 
-Client_Node::Client_Node(uint32_t id, uint32_t local_datacenter_id, uint32_t retry_attempts,
+Client_Node::Client_Node(uint32_t id, uint32_t local_datacenter_id, uint32_t conf_id, uint32_t retry_attempts,
         uint32_t metadata_server_timeout, uint32_t timeout_per_request, std::vector<DC*>& datacenters){
-
+        
+    conf_id_in_context = conf_id;
     cas = new CAS_Client(id, local_datacenter_id, retry_attempts, metadata_server_timeout, timeout_per_request,
             datacenters, this);
     abd = new ABD_Client(id, local_datacenter_id, retry_attempts, metadata_server_timeout, timeout_per_request,
@@ -37,15 +38,15 @@ const uint32_t& Client_Node::get_id() const{
     if(abd != nullptr){
         return abd->get_id();
     }
-    if(cas != nullptr){
-        return cas->get_id();
-    }
+    // if(cas != nullptr){
+    //     return cas->get_id();
+    // }
     static uint32_t ret = -1;
     return ret;
 }
 
 int Client_Node::update_placement(const std::string& key, const uint32_t conf_id){
-    
+    assert(key != "");
     int ret = 0;
     
     uint32_t requested_conf_id;
@@ -93,6 +94,7 @@ int Client_Node::update_placement(const std::string& key, const uint32_t conf_id
 }
 
 const Placement& Client_Node::get_placement(const std::string& key, const bool force_update, const uint32_t conf_id){
+    assert(key != "");
     uint64_t le_init = time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
     
     if(force_update){
@@ -126,34 +128,148 @@ const Placement& Client_Node::get_placement(const std::string& key, const bool f
     return this->get_placement(key, force_update, stoul(conf_id));
 }
 
+bool Client_Node::getConfigAtMDS(Placement& p) {
+    if(this->abd != nullptr){
+
+        DPRINTF(DEBUG_ABD_Client, "metadata_server_ip port is %s %s\n", this->abd->get_metadata_server_ip().c_str(), this->abd->get_metadata_server_port().c_str());
+
+        Connect c(this->abd->get_metadata_server_ip(), this->abd->get_metadata_server_port());
+        if(!c.is_connected()){
+            DPRINTF(DEBUG_ABD_Client, "connection error\n");
+            return false;
+        }
+
+        std::string status, msg;
+        std::string recvd;
+        std::chrono::milliseconds span(this->abd->get_metadata_server_timeout());
+        bool flag = false;
+
+        std::promise<std::string> data_set;
+        std::future<std::string> data_set_fut = data_set.get_future();
+        std::vector<std::string> keys;
+        DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("get_config", ""));
+        std::future<int> fut = std::async(std::launch::async, DataTransfer::recvMsg_async, *c, std::move(data_set));
+
+        if(data_set_fut.valid()){
+//            DPRINTF(DEBUG_CLIENT_NODE, "data_set_fut is valid\n");
+            std::future_status aaa = data_set_fut.wait_for(span);
+            if(aaa == std::future_status::ready){
+                int ret = fut.get();
+//                DPRINTF(DEBUG_CLIENT_NODE, "Future ret value is %d\n", ret);
+                if(ret == 1){
+                    flag = true;
+                    recvd = data_set_fut.get();
+                }
+            }
+//            DPRINTF(DEBUG_CLIENT_NODE, "aaaa is %d and to is %d\n", aaa, std::future_status::timeout);
+        }
+        else{
+            DPRINTF(DEBUG_CLIENT_NODE, "data_set_fut is not valid\n");
+            return false;
+        }
+
+        if(flag){
+            status.clear();
+            msg.clear();
+
+            p = DataTransfer::deserializeMDS(recvd, status, msg);
+            DPRINTF(DEBUG_CLIENT_NODE, "getConfigAtMDS msg %s \n", msg.c_str());
+            assert(status == "OK");
+        }
+        else{
+            DPRINTF(DEBUG_CLIENT_NODE, "Metadata server timeout for request: %s\n", msg.c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Client_Node::recordDoneOprAtMDS() {
+    if(this->abd != nullptr){
+
+        DPRINTF(DEBUG_ABD_Client, "metadata_server_ip port is %s %s\n", this->abd->get_metadata_server_ip().c_str(), this->abd->get_metadata_server_port().c_str());
+
+        Connect c(this->abd->get_metadata_server_ip(), this->abd->get_metadata_server_port());
+        if(!c.is_connected()){
+            DPRINTF(DEBUG_ABD_Client, "connection error\n");
+            return false;
+        }
+
+        std::string status, msg;
+        std::string recvd;
+        std::chrono::milliseconds span(this->abd->get_metadata_server_timeout());
+        bool flag = false;
+
+        std::promise<std::string> data_set;
+        std::future<std::string> data_set_fut = data_set.get_future();
+        std::vector<std::string> keys;
+        DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("done_operation", ""));
+        std::future<int> fut = std::async(std::launch::async, DataTransfer::recvMsg_async, *c, std::move(data_set));
+
+        if(data_set_fut.valid()){
+//            DPRINTF(DEBUG_CLIENT_NODE, "data_set_fut is valid\n");
+            std::future_status aaa = data_set_fut.wait_for(span);
+            if(aaa == std::future_status::ready){
+                int ret = fut.get();
+//                DPRINTF(DEBUG_CLIENT_NODE, "Future ret value is %d\n", ret);
+                if(ret == 1){
+                    flag = true;
+                    recvd = data_set_fut.get();
+                }
+            }
+//            DPRINTF(DEBUG_CLIENT_NODE, "aaaa is %d and to is %d\n", aaa, std::future_status::timeout);
+        }
+        else{
+            DPRINTF(DEBUG_CLIENT_NODE, "data_set_fut is not valid\n");
+            return false;
+        }
+
+        if(flag){
+            status.clear();
+            msg.clear();
+
+            Placement p = DataTransfer::deserializeMDS(recvd, status, msg);
+            assert(status == "OK");
+            DPRINTF(DEBUG_CLIENT_NODE, "recordDoneOprAtMDS msg %s \n", msg.c_str());
+        }
+        else{
+            DPRINTF(DEBUG_CLIENT_NODE, "Metadata server timeout for request: %s\n", msg.c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
 const uint32_t& Client_Node::get_conf_id(const std::string& key){
-    auto it = this->keys_info.find(key);
-    if(it != this->keys_info.end()){
-        return it->second.first;
-    }
-    else{
-        assert(update_placement(key, 0) == 0);
-        return this->keys_info[key].first;
-    }
+    return conf_id_in_context;
+    // assert(key != "");
+    // auto it = this->keys_info.find(key);
+    // if(it != this->keys_info.end()){
+    //     return it->second.first;
+    // }
+    // else{
+    //     assert(update_placement(key, 0) == 0);
+    //     return this->keys_info[key].first;
+    // }
 }
 
 int Client_Node::put(const std::string& key, const std::string& value){
-    const Placement& p = get_placement(key);
-    if(p.protocol == CAS_PROTOCOL_NAME){
-        return this->cas->put(key, value);
-    }
-    else{
+    // const Placement& p = get_placement(key);
+    // if(p.protocol == CAS_PROTOCOL_NAME){
+    //     return this->cas->put(key, value);
+    // }
+    // else{
         return this->abd->put(key, value);
-    }
+    // }
 }
 
 
 int Client_Node::get(const std::string& key, std::string& value){
-    const Placement& p = get_placement(key);
-    if(p.protocol == CAS_PROTOCOL_NAME){
-        return this->cas->get(key, value);
-    }
-    else{
+    // const Placement& p = get_placement(key);
+    // if(p.protocol == CAS_PROTOCOL_NAME){
+    //     return this->cas->get(key, value);
+    // }
+    // else{
         return this->abd->get(key, value);
-    }
+    // }
 }

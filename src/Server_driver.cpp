@@ -55,14 +55,9 @@ void message_handler(int connection, DataServer& dataserver, int portid, std::st
         EASY_LOG_M("put finished");
     }
     else if(method == "get"){
-        EASY_LOG_M(string("get, The key is ") + data[1] + " ts: " + data[2] + " class: " + data[3]);
-        if(data[3] == CAS_PROTOCOL_NAME){
-            result = DataTransfer::sendMsg(connection, dataserver.get(data[1], data[2], data[3], stoul(data[4])));
-        }
-        else{
-            std::string phony_timestamp;
-            result = DataTransfer::sendMsg(connection, dataserver.get(data[1], phony_timestamp, data[2], stoul(data[3])));
-        }
+        EASY_LOG_M(string("get, The key is ") + data[1] + " class: " + data[2] + " confid: " + data[3]);
+        std::string phony_timestamp;
+        result = DataTransfer::sendMsg(connection, dataserver.get(data[1], phony_timestamp, data[2], stoul(data[3])));
         EASY_LOG_M("get finished");
     }
     else if(method == "get_timestamp"){
@@ -101,7 +96,6 @@ void server_connection(int connection, DataServer& dataserver, int portid){
         std::string recvd;
         int result = DataTransfer::recvMsg(connection, recvd);
         if(result != 1){
-//            DataTransfer::sendMsg(connection, DataTransfer::serializeMDS("ERROR", "Error in receiving"));
             close(connection);
             DPRINTF(DEBUG_METADATA_SERVER, "one connection closed.\n");
             return;

@@ -19,7 +19,7 @@
 
 class Client_Node{
 public:
-    Client_Node(uint32_t id, uint32_t local_datacenter_id, uint32_t retry_attempts, uint32_t metadata_server_timeout,
+    Client_Node(uint32_t id, uint32_t local_datacenter_id, uint32_t conf_id, uint32_t retry_attempts, uint32_t metadata_server_timeout,
             uint32_t timeout_per_request, std::vector<DC*>& datacenters);
     Client_Node(const Client_Node& orig) = delete;
     virtual ~Client_Node();
@@ -31,6 +31,8 @@ public:
     const Placement& get_placement(const std::string& key, const bool force_update = false, const uint32_t conf_id = 0);
     const Placement& get_placement(const std::string& key, const bool force_update, const std::string& conf_id);
     const uint32_t& get_conf_id(const std::string& key);
+    bool getConfigAtMDS(Placement& p);
+    bool recordDoneOprAtMDS();
     
     // getters
     const uint32_t& get_id() const;
@@ -38,7 +40,7 @@ public:
 private:
     // a map from a key to its conf_id and its placement
     std::map <std::string, std::pair<uint32_t, Placement> > keys_info;
-    
+    uint32_t conf_id_in_context;
     ABD_Client* abd;
     CAS_Client* cas;
 

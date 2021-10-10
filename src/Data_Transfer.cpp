@@ -457,20 +457,15 @@ int DataTransfer::recvMsg_async(const int sock, std::promise <std::string>&& dat
 //    return plc;
 //}
 
-std::string DataTransfer::serializeMDS(const std::string& status, const std::string& msg, const std::string& key,
-                                       const uint32_t& curr_conf_id, const uint32_t& new_conf_id, const std::string& timestamp,
-                                       const Placement& placement){
+std::string DataTransfer::serializeMDS(const std::string& status, const std::string& msg,
+                                       const uint32_t& curr_conf_id, const Placement& placement,
+                                       const std::vector<std::string>& keys){
     packet::MetaDataServer mds;
     mds.set_status(status);
     mds.set_msg(msg);
-    mds.set_key(key);
     mds.set_curr_conf_id(curr_conf_id);
-    mds.set_new_conf_id(new_conf_id);
-    mds.set_timestamp(timestamp);
     
-//    if(placement != nullptr){
     packet::Placement* mds_placement = mds.mutable_placement();
-//    const Placement& pp = *placement;
 
     mds_placement->set_protocol(placement.protocol);
     mds_placement->set_m(placement.m);
@@ -499,15 +494,10 @@ std::string DataTransfer::serializeMDS(const std::string& status, const std::str
             quorums->add_q4(q);
         }
     }
-//    }
-//    else{
-//        packet::Placement* placement_p = mds.mutable_placement_p();
-//
-//        placement_p->set_protocol("");
-//        placement_p->set_m(0);
-//        placement_p->set_k(0);
-//        placement_p->set_f(0);
-//    }
+
+    for(auto key: keys){
+        mds.add_keys(key);
+    }
     
     std::string str_out;
     if(!mds.SerializeToString(&str_out)){
@@ -516,14 +506,14 @@ std::string DataTransfer::serializeMDS(const std::string& status, const std::str
     return str_out;
 }
 
-std::string DataTransfer::serializeMDS(const std::string& status, const std::string& msg, const std::string& key,
-                                const uint32_t& curr_conf_id, const uint32_t& new_conf_id, const std::string& timestamp){
+std::string DataTransfer::serializeMDS(const std::string& status, const std::string& msg, const uint32_t& curr_conf_id){
     Placement p;
-    return DataTransfer::serializeMDS(status, msg, key, curr_conf_id, new_conf_id, timestamp, p);
+    std::vector<std::string> keys;
+    return DataTransfer::serializeMDS(status, msg, curr_conf_id, p, keys);
 }
 
-Placement DataTransfer::deserializeMDS(const std::string& data, std::string& status, std::string& msg, std::string& key,
-                                        uint32_t& curr_conf_id, uint32_t& new_conf_id, std::string& timestamp){
+Placement DataTransfer::deserializeMDS(const std::string& data, std::string& status, std::string& msg,
+                                        uint32_t& curr_conf_id, std::vector<std::string>& keys){
     Placement p;
     packet::MetaDataServer mds;        // Nomenclature: add 'g' in front of gRPC variables
     if(!mds.ParseFromString(data)){
@@ -532,13 +522,11 @@ Placement DataTransfer::deserializeMDS(const std::string& data, std::string& sta
     
     status = mds.status();
     msg = mds.msg();
-    key = mds.key();
     curr_conf_id = mds.curr_conf_id();
-    new_conf_id = mds.new_conf_id();
-    timestamp = mds.timestamp();
-    
-//    if(!(status == "ERROR" || status == "WARN" || (status == "OK" && msg == "key updated"))){
-//    p = new Placement;
+
+    for(auto key: mds.keys()){
+        keys.push_back(key);
+    }
 
     const packet::Placement& gp = mds.placement();
 
@@ -566,16 +554,12 @@ Placement DataTransfer::deserializeMDS(const std::string& data, std::string& sta
             p.quorums.back().Q4.push_back(q);
         }
     }
-
-//    }
     
     return p;
 }
 
 Placement DataTransfer::deserializeMDS(const std::string& data, std::string& status, std::string& msg){
-    std::string key;
     uint32_t curr_conf_id;
-    uint32_t new_conf_id;
-    std::string timestamp;
-    return DataTransfer::deserializeMDS(data, status, msg, key, curr_conf_id, new_conf_id, timestamp);
+    std::vector<std::string> keys;
+    return DataTransfer::deserializeMDS(data, status, msg, curr_conf_id, keys);
 }

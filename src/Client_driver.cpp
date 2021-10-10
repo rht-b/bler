@@ -340,7 +340,7 @@ int run_session(uint req_idx){
 //    srand(time(NULL) + client_id + ip_str_to_int(datacenters[datacenter_indx]->servers[0]->ip));
 #endif
 
-    Client_Node clt(client_id, datacenter_id, retry_attempts_number, metadata_server_timeout, timeout_per_request, datacenters);
+    Client_Node clt(client_id, datacenter_id, conf_id, retry_attempts_number, metadata_server_timeout, timeout_per_request, datacenters);
 
     auto timePoint2 = time_point_cast<milliseconds>(system_clock::now());
     timePoint2 += milliseconds{get_random_number_uniform(0, 2000)};

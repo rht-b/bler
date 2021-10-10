@@ -59,9 +59,7 @@ message Group_config{
 message MetaDataServer{
 	bytes status = 1;
 	bytes msg = 2;
-	bytes key = 3;
-	uint32 curr_conf_id = 4;
-	uint32 new_conf_id = 5;
-	bytes timestamp = 6;
-	Placement placement = 7;
+	uint32 curr_conf_id = 3;
+	Placement placement = 4;
+	repeated bytes keys = 5;
 }

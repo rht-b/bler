@@ -303,24 +303,24 @@ Reconfig::~Reconfig(){
 }
 
 int Reconfig::reconfig_one_key(const string& key, const Group& old_config, uint32_t old_conf_id, const Group& new_config, uint32_t new_conf_id){
-    DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
-    EASY_LOG_INIT_M(string("from ") + to_string(old_conf_id) + " to " + to_string(new_conf_id) + " for key " + key);
+    // DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
+    // EASY_LOG_INIT_M(string("from ") + to_string(old_conf_id) + " to " + to_string(new_conf_id) + " for key " + key);
 
-    unique_ptr<Timestamp> ret_ts;
-    string ret_v;
-    assert(Reconfig::send_reconfig_query(old_config, old_conf_id, key, ret_ts, ret_v) == 0);
-    EASY_LOG_M("send_reconfig_query done");
-    if(old_config.placement.protocol == CAS_PROTOCOL_NAME){
-        assert(Reconfig::send_reconfig_finalize(old_config, old_conf_id, key, ret_ts, ret_v) == 0);
-        EASY_LOG_M("send_reconfig_finalize done");
-    }
-    EASY_LOG_M("ret_ts: " + ret_ts->get_string() + ", ret_v: " + TRUNC_STR(ret_v));
-    assert(Reconfig::send_reconfig_write(new_config, new_conf_id, key, ret_ts, ret_v) == 0);
-    EASY_LOG_M("send_reconfig_write done");
-    assert(update_metadata_info(key, old_conf_id, new_conf_id, ret_ts->get_string(), new_config.placement) == 0);
-    EASY_LOG_M("update_metadata_info done");
-    assert(Reconfig::send_reconfig_finish(old_config, old_conf_id, new_conf_id, key, ret_ts) == 0);
-    EASY_LOG_M("send_reconfig_finish done");
+    // unique_ptr<Timestamp> ret_ts;
+    // string ret_v;
+    // assert(Reconfig::send_reconfig_query(old_config, old_conf_id, key, ret_ts, ret_v) == 0);
+    // EASY_LOG_M("send_reconfig_query done");
+    // if(old_config.placement.protocol == CAS_PROTOCOL_NAME){
+    //     assert(Reconfig::send_reconfig_finalize(old_config, old_conf_id, key, ret_ts, ret_v) == 0);
+    //     EASY_LOG_M("send_reconfig_finalize done");
+    // }
+    // EASY_LOG_M("ret_ts: " + ret_ts->get_string() + ", ret_v: " + TRUNC_STR(ret_v));
+    // assert(Reconfig::send_reconfig_write(new_config, new_conf_id, key, ret_ts, ret_v) == 0);
+    // EASY_LOG_M("send_reconfig_write done");
+    // assert(update_metadata_info(key, old_conf_id, new_conf_id, ret_ts->get_string(), new_config.placement) == 0);
+    // EASY_LOG_M("update_metadata_info done");
+    // assert(Reconfig::send_reconfig_finish(old_config, old_conf_id, new_conf_id, key, ret_ts) == 0);
+    // EASY_LOG_M("send_reconfig_finish done");
 
     return S_OK;
 }
@@ -328,31 +328,26 @@ int Reconfig::reconfig_one_key(const string& key, const Group& old_config, uint3
 int Reconfig::reconfig(const Group& old_config, uint32_t old_conf_id, const Group& new_config, uint32_t new_conf_id){
 
     vector<future<int>> rets;
-    for(auto it = old_config.keys.begin(); it != old_config.keys.end(); it++){
-        rets.emplace_back(async(launch::async, &Reconfig::reconfig_one_key, this, *it, old_config, old_conf_id, new_config, new_conf_id));
-        if(rets.back().get() != S_OK){
-            assert(false);
-        }
-    }
+    // for(auto it = old_config.keys.begin(); it != old_config.keys.end(); it++){
+    //     rets.emplace_back(async(launch::async, &Reconfig::reconfig_one_key, this, *it, old_config, old_conf_id, new_config, new_conf_id));
+    //     if(rets.back().get() != S_OK){
+    //         assert(false);
+    //     }
+    // }
 
-//    for(auto it = rets.begin(); it != rets.end(); it++){
-//        if(it->get() != S_OK){
-//            assert(false);
-//        }
-//    }
+    assert(update_metadata_info(new_conf_id, new_config.placement, new_config.keys) == 0);
 
     return S_OK;
 }
 
-int Reconfig::update_one_metadata_server(const std::string& metadata_server_ip, uint32_t metadata_server_port, const std::string& key,
-                               uint32_t old_confid_id, uint32_t new_confid_id, const std::string& timestamp,
-                               const Placement& p){
+int Reconfig::init_metadata_server(uint32_t confid_id, const Placement& p) {
     Connect c(metadata_server_ip, metadata_server_port);
     if(!c.is_connected()){
         DPRINTF(DEBUG_RECONFIG_CONTROL, "Warn: cannot connect to metadata server\n");
         return -2;
     }
-    DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("update", "", key, old_confid_id, new_confid_id, timestamp, p));
+    const std::vector<std::string> keys;
+    DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("init_config", "", confid_id, p, keys));
 
     string recvd;
     if(DataTransfer::recvMsg(*c, recvd) == 1){
@@ -375,14 +370,49 @@ int Reconfig::update_one_metadata_server(const std::string& metadata_server_ip, 
     return S_OK;
 }
 
-int Reconfig::update_metadata_info(const string& key, uint32_t old_confid_id, uint32_t new_confid_id, const string& timestamp,
-                         const Placement& p){
+int Reconfig::update_one_metadata_server(const std::string& metadata_server_ip, uint32_t metadata_server_port, uint32_t new_confid_id,
+                               const Placement& p, const std::vector<std::string>& keys){
+    Connect c(metadata_server_ip, metadata_server_port);
+    if(!c.is_connected()){
+        DPRINTF(DEBUG_RECONFIG_CONTROL, "Warn: cannot connect to metadata server\n");
+        return -2;
+    }
+    DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("set_config", "", new_confid_id, p, keys));
+
+    string recvd;
+    if(DataTransfer::recvMsg(*c, recvd) == 1){
+        string status;
+        string msg;
+        DataTransfer::deserializeMDS(recvd, status, msg);
+        if(status != "OK" && status != "WARN"){
+            DPRINTF(DEBUG_RECONFIG_CONTROL, "%s\n", msg.c_str());
+            assert(false);
+        }
+        if(status == "OK"){
+            DPRINTF(DEBUG_RECONFIG_CONTROL, "OK: msg is %s\n", msg.c_str());
+        }
+        if(status == "WARN"){
+            DPRINTF(DEBUG_RECONFIG_CONTROL, "WARN: msg is %s\n", msg.c_str());
+        }
+        DPRINTF(DEBUG_RECONFIG_CONTROL, "metadata_server updated\n");
+    }
+    else{
+        DPRINTF(DEBUG_RECONFIG_CONTROL, "Error in receiving msg from Metadata Server\n");
+        return -1;
+    }
+    return S_OK;
+}
+
+int Reconfig::update_metadata_info(uint32_t new_confid_id, const Placement& p, const std::vector<std::string>& keys){
     DPRINTF(DEBUG_RECONFIG_CONTROL, "started\n");
     vector<future<int>> rets;
-    for(uint k = 0; k < datacenters.size(); k++){
-        rets.emplace_back(async(launch::async, &Reconfig::update_one_metadata_server, this, datacenters[k]->metadata_server_ip,
-                                datacenters[k]->metadata_server_port, key, old_confid_id, new_confid_id, timestamp, p));
-    }
+    // for(uint k = 0; k < datacenters.size(); k++){
+    //     rets.emplace_back(async(launch::async, &Reconfig::update_one_metadata_server, this, datacenters[k]->metadata_server_ip,
+    //                             datacenters[k]->metadata_server_port, key, old_confid_id, new_confid_id, timestamp, p));
+    // }
+
+    rets.emplace_back(async(launch::async, &Reconfig::update_one_metadata_server, this, datacenters[0]->metadata_server_ip,
+                                datacenters[0]->metadata_server_port, new_confid_id, p, keys));
 
     for(auto it = rets.begin(); it != rets.end(); it++){
         if(it->get() != S_OK){

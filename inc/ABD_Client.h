@@ -32,7 +32,7 @@ class ABD_Client : public Client {
  private:
   Client_Node *parent;
 
-  int get_timestamp(const std::string &key, std::unique_ptr<Timestamp> &timestamp_p);
+  int get_timestamp(const std::string &key, std::unique_ptr<Timestamp> &timestamp_p, const Placement& p);
 
   int asyc_propagate(const std::string key, const std::string value, const std::string timestamp,
                      const Placement p, const uint32_t conf_id);

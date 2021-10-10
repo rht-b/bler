@@ -510,14 +510,18 @@ int Controller::init_metadata_server(){
     vector<future<int>> rets;
 
     const Group_config& gc = this->properties.group_configs[0];
-    for(uint i = 0; i < gc.groups.size(); i++){
-        for(uint j = 0; j < gc.groups[i].keys.size(); j++){
-            string key = gc.groups[i].keys[j];
-            uint32_t conf_id = gc.id;
-            rets.emplace_back(async(launch::async, &Reconfig::update_metadata_info, this->reconfigurer_p.get(), key,
-                                    conf_id, conf_id, "", gc.groups[i].placement));
-        }
-    }
+    // for(uint i = 0; i < gc.groups.size(); i++){
+    //     for(uint j = 0; j < gc.groups[i].keys.size(); j++){
+    //         string key = gc.groups[i].keys[j];
+    //         uint32_t conf_id = gc.id;
+    //         rets.emplace_back(async(launch::async, &Reconfig::update_metadata_info, this->reconfigurer_p.get(), key,
+    //                                 conf_id, conf_id, "", gc.groups[i].placement));
+    //     }
+    // }
+
+
+    // init configuration for first groupconfig and first group in it 
+    rets.emplace_back(async(launch::async, &Reconfig::init_metadata_server, this->reconfigurer_p.get(), gc.id, gc.groups[0].placement));
 
     for(auto it = rets.begin(); it != rets.end(); it++){
         if(it->get() != S_OK){
@@ -687,7 +691,7 @@ int Controller::warm_up(){
 int main(){
 
 #ifdef LOCAL_TEST
-    Controller master(2, 10000, 10000, "./config/local_config.json",
+    Controller master(2, 1000000, 1000000, "./config/local_config.json",
                       "./config/auto_test/input_workload.json", "./config/auto_test/optimizer_output.json");
 #else
     Controller master(2, 10000, 10000, "./config/auto_test/datacenters_access_info.json",
