@@ -60,7 +60,7 @@ strVec ABD_Server::init_key(const std::string& key, const uint32_t conf_id){
 
     DPRINTF(DEBUG_ABD_Server, "started.\n");
 
-    string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id); // Construct the unique id for the key
+    string con_key = construct_key(key, ABD_PROTOCOL_NAME); // Construct the unique id for the key
     strVec init_value{"init", ABD_PROTOCOL_NAME, "0-0", "", ""};
     put_data(con_key, init_value);
 
@@ -72,7 +72,7 @@ std::string ABD_Server::get_timestamp(const std::string& key, uint32_t conf_id){
     DPRINTF(DEBUG_ABD_Server, "started.\n");
     lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
 
-    string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id); // Construct the unique id for the key
+    string con_key = construct_key(key, ABD_PROTOCOL_NAME); // Construct the unique id for the key
 
     DPRINTF(DEBUG_ABD_Server, "get_timestamp started and the key is %s\n", con_key.c_str());
 
@@ -96,7 +96,7 @@ std::string ABD_Server::put(const std::string& key, uint32_t conf_id, const std:
     DPRINTF(DEBUG_ABD_Server, "started.\n");
     lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
 
-    string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id);
+    string con_key = construct_key(key, ABD_PROTOCOL_NAME);
     DPRINTF(DEBUG_ABD_Server, "con_key is %s\n", con_key.c_str());
 
     strVec data = get_data(con_key);
@@ -136,7 +136,7 @@ std::string ABD_Server::get(const std::string& key, uint32_t conf_id){
     DPRINTF(DEBUG_ABD_Server, "started.\n");
     lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
 
-    string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id); // Construct the unique id for the key
+    string con_key = construct_key(key, ABD_PROTOCOL_NAME); // Construct the unique id for the key
     DPRINTF(DEBUG_ABD_Server, "get started and the key is %s\n", con_key.c_str());
 
     strVec data = get_data(con_key);
@@ -159,7 +159,7 @@ std::string ABD_Server::clear_key(const std::string& key, uint32_t conf_id){
     DPRINTF(DEBUG_ABD_Server, "started.\n");
     lock_guard<mutex> lock(*(mu_p_vec_p->at(stoui(key))));
 
-    string con_key = construct_key(key, ABD_PROTOCOL_NAME, conf_id); // Construct the unique id for the key
+    string con_key = construct_key(key, ABD_PROTOCOL_NAME); // Construct the unique id for the key
 
     DPRINTF(DEBUG_ABD_Server, "clear_key started and the key is %s\n", con_key.c_str());
 

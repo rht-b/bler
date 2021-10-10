@@ -862,6 +862,14 @@ std::string construct_key(const std::string& key, const std::string& protocol, c
     return ret;
 }
 
+std::string construct_key(const std::string& key, const std::string& protocol) {
+    std::string ret;
+    ret += key;
+    ret += "!";
+    ret += protocol;
+    return ret;
+}
+
 #ifndef LIBRASURE_ONLY
 
 int ask_metadata(const std::string& metadata_server_ip, const std::string& metadata_server_port,
