@@ -447,6 +447,10 @@ int ABD_Client::get(const string& key, string& value){
         }
         EASY_LOG_M("GET_OPTIMIZED: no need to do phase 2. Done.");
         DPRINTF(DEBUG_ABD_Client, "get does not need to put. end latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
+
+        // record done operation at metadata server
+        assert(parent->recordDoneOprAtMDS());
+
         return op_status;
     }
 #endif

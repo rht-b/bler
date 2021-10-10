@@ -21,7 +21,7 @@
           "object_size": 1024,
           "metadata_size": 9.313225746154785e-08,
           "num_objects": 1073741824.0,
-          "arrival_rate": 200,
+          "arrival_rate": 100,
           "read_ratio": 0.03225,
           "write_ratio": 0.96775,
           "SLO_read": 1000,
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "timestamp": 70,
+      "timestamp": 30,
       "id": 2,
       "grp_workload": [
         {
@@ -55,7 +55,7 @@
           "object_size": 1024,
           "metadata_size": 9.313225746154785e-08,
           "num_objects": 1073741824.0,
-          "arrival_rate": 200,
+          "arrival_rate": 100,
           "read_ratio": 0.03225,
           "write_ratio": 0.96775,
           "SLO_read": 1000,
