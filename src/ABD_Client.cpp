@@ -290,7 +290,7 @@ int ABD_Client::put(const string& key, const string& value){
     // Get placement(configuration) from metadata server and increment the counter
     // const Placement& p = parent->get_placement(key);
     Placement p;
-    parent->getConfigAtMDS(p);
+    parent->getConfigAtMDS(key, p);
     EASY_LOG_M("placement received. trying to do phase 1...");
 
 
@@ -372,7 +372,7 @@ int ABD_Client::get(const string& key, string& value){
     // Get placement(configuration) from metadata server and increment the counter
     // const Placement& p = parent->get_placement(key);
     Placement p;
-    parent->getConfigAtMDS(p);
+    parent->getConfigAtMDS(key, p);
     EASY_LOG_M("placement received. trying to do phase 1...");
 
     int le_counter = 0;

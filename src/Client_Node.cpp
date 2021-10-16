@@ -128,7 +128,7 @@ const Placement& Client_Node::get_placement(const std::string& key, const bool f
     return this->get_placement(key, force_update, stoul(conf_id));
 }
 
-bool Client_Node::getConfigAtMDS(Placement& p) {
+bool Client_Node::getConfigAtMDS(const string& key, Placement& p) {
     if(this->abd != nullptr){
 
         DPRINTF(DEBUG_ABD_Client, "metadata_server_ip port is %s %s\n", this->abd->get_metadata_server_ip().c_str(), this->abd->get_metadata_server_port().c_str());
@@ -146,8 +146,10 @@ bool Client_Node::getConfigAtMDS(Placement& p) {
 
         std::promise<std::string> data_set;
         std::future<std::string> data_set_fut = data_set.get_future();
+        Placement dummy_placement;
         std::vector<std::string> keys;
-        DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("get_config", ""));
+        keys.push_back(key);
+        DataTransfer::sendMsg(*c, DataTransfer::serializeMDS("get_config", "", 0, dummy_placement, keys));
         std::future<int> fut = std::async(std::launch::async, DataTransfer::recvMsg_async, *c, std::move(data_set));
 
         if(data_set_fut.valid()){

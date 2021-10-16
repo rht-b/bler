@@ -508,20 +508,12 @@ int Controller::run_client(uint32_t datacenter_id, uint32_t conf_id, uint32_t gr
 int Controller::init_metadata_server(){
     assert(properties.group_configs.size() > 0);
     vector<future<int>> rets;
+    string operation  = "init_config";
 
     const Group_config& gc = this->properties.group_configs[0];
-    // for(uint i = 0; i < gc.groups.size(); i++){
-    //     for(uint j = 0; j < gc.groups[i].keys.size(); j++){
-    //         string key = gc.groups[i].keys[j];
-    //         uint32_t conf_id = gc.id;
-    //         rets.emplace_back(async(launch::async, &Reconfig::update_metadata_info, this->reconfigurer_p.get(), key,
-    //                                 conf_id, conf_id, "", gc.groups[i].placement));
-    //     }
-    // }
-
-
-    // init configuration for first groupconfig and first group in it 
-    rets.emplace_back(async(launch::async, &Reconfig::init_metadata_server, this->reconfigurer_p.get(), gc.id, gc.groups[0].placement));
+    for(uint i = 0; i < gc.groups.size(); i++){
+        rets.emplace_back(async(launch::async, &Reconfig::update_metadata_info, this->reconfigurer_p.get(), operation, gc.id, gc.groups[i].placement, gc.groups[i].keys));
+    }
 
     for(auto it = rets.begin(); it != rets.end(); it++){
         if(it->get() != S_OK){

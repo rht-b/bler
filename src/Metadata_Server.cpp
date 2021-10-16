@@ -52,8 +52,9 @@ uint64_t counter = 0;
 
 std::vector<DC*> datacenters;
 
-Value* currConfig;
-Value* nextConfig;
+// Value* currConfig;
+// Value* nextConfig;
+std::map<string, std::pair<Value*, Value*>> keyConfMap;
 std::mutex next_config_lock_t;
 
 namespace ABD_helper_propagate_state{
@@ -195,20 +196,25 @@ namespace ABD_helper_propagate_state{
     }
 }
 
-string initConfig(uint32_t curr_conf_id, const Placement& p) {
+string initConfig(uint32_t curr_conf_id, const Placement& p, const vector<string>& keys) {
     unique_lock<mutex> nc_lock(next_config_lock_t);
     unique_lock<mutex> lock(lock_t);
 
     counter = 0;
-    currConfig = new Value;
+    Value* currConfig = new Value;
     currConfig->confid = curr_conf_id;
     currConfig->placement = p;
-    nextConfig = NULL;
+    Value* nextConfig = NULL;
+
+    for(uint32_t i = 0; i < keys.size(); i++) {
+        keyConfMap[keys[i]].first = currConfig;
+        keyConfMap[keys[i]].second = nextConfig;
+    }
 
     return DataTransfer::serializeMDS("OK", "");
 }
 
-string getConfig() {
+string getConfig(const string& key) {
     unique_lock<mutex> nc_lock(next_config_lock_t);
 
     unique_lock<mutex> lock(lock_t);
@@ -218,7 +224,7 @@ string getConfig() {
 
     // status, msg, key, curr_conf_id, placement, keys
     std::vector<std::string> keys;
-    return DataTransfer::serializeMDS("OK", "counter="+to_string(counter), currConfig->confid, currConfig->placement, keys);
+    return DataTransfer::serializeMDS("OK", "counter="+to_string(counter), keyConfMap[key].first->confid, keyConfMap[key].first->placement, keys);
 }
 
 string doneOperation() {
@@ -236,9 +242,8 @@ string doneOperation() {
     return DataTransfer::serializeMDS("OK", "counter="+to_string(counter));
 }
 
-bool readFromOldCfgToWriteToNewCfg(const std::string& key) {
-    assert(currConfig->placement.protocol == ABD_PROTOCOL_NAME);
-    assert(nextConfig->placement.protocol == ABD_PROTOCOL_NAME);
+bool readFromOldCfgToWriteToNewCfg(const std::string& key, const Value* nextConfig) {
+    assert(keyConfMap[key].first->placement.protocol == ABD_PROTOCOL_NAME);
 
     int op_status = 0;    // 0: Success, -1: timeout
 
@@ -252,11 +257,11 @@ bool readFromOldCfgToWriteToNewCfg(const std::string& key) {
     // read (v, t*) for key in oldConfig
     op_status = ABD_helper_propagate_state::failure_support_optimized(
         "get", key, "", "",
-        currConfig->placement.quorums[0].Q1.size(), 
-        currConfig->placement.servers, 
+        keyConfMap[key].first->placement.quorums[0].Q1.size(), 
+        keyConfMap[key].first->placement.servers, 
         datacenters, 
-        currConfig->placement.protocol,
-        currConfig->confid,
+        keyConfMap[key].first->placement.protocol,
+        keyConfMap[key].first->confid,
         10000, // TODO pass it in command line args 
         ret);
 
@@ -280,11 +285,11 @@ bool readFromOldCfgToWriteToNewCfg(const std::string& key) {
     // Issue cancel for key in oldConfig
     op_status = ABD_helper_propagate_state::failure_support_optimized(
         "clear_key", key, "", "",
-        currConfig->placement.servers.size(), // TODO check if we really need to issue cancel to all servers 
-        currConfig->placement.servers, 
+        keyConfMap[key].first->placement.servers.size(), // TODO check if we really need to issue cancel to all servers 
+        keyConfMap[key].first->placement.servers, 
         datacenters, 
-        currConfig->placement.protocol,
-        currConfig->confid,
+        keyConfMap[key].first->placement.protocol,
+        keyConfMap[key].first->confid,
         10000, // TODO pass it in command line args 
         ret);
 
@@ -326,11 +331,13 @@ bool readFromOldCfgToWriteToNewCfg(const std::string& key) {
 string setConfig(uint32_t new_conf_id, const Placement& new_placement, const std::vector<std::string>& keys) {
     unique_lock<mutex> nc_lock(next_config_lock_t);
 
-    if(nextConfig != NULL) { // will never occur coz getConfig & setConfig are synchorized with next_config_lock_t mutex
-        return DataTransfer::serializeMDS("ERROR", "reconfiguration denied");
+    for(uint32_t i = 0; i < keys.size(); i++) {
+        if(keyConfMap[keys[i]].second != NULL) { // will never occur coz getConfig & setConfig are synchorized with next_config_lock_t mutex
+            return DataTransfer::serializeMDS("ERROR", "reconfiguration denied");
+        }
     }
     
-    nextConfig = new Value;
+    Value* nextConfig = new Value;
     nextConfig->confid = new_conf_id;
     nextConfig->placement = new_placement;
 
@@ -343,12 +350,14 @@ string setConfig(uint32_t new_conf_id, const Placement& new_placement, const std
     }
 
     for(string key:keys) {
-        bool status = readFromOldCfgToWriteToNewCfg(key);
+        bool status = readFromOldCfgToWriteToNewCfg(key, nextConfig);
         assert(status);
     }
-    
-    currConfig->confid = new_conf_id;
-    currConfig->placement = new_placement;
+
+    for(string key:keys) { // one iteration should suffice
+        keyConfMap[key].first->confid = new_conf_id;
+        keyConfMap[key].first->placement = new_placement;
+    }
 
     delete(nextConfig);
     nextConfig = NULL;
@@ -367,10 +376,10 @@ void message_handler(int connection, int portid, const std::string& recvd){
     std::string& method = status; // Method: ask/update, key, conf_id
     
     if(method == "init_config"){
-        result = DataTransfer::sendMsg(connection, initConfig(conf_id, p));
+        result = DataTransfer::sendMsg(connection, initConfig(conf_id, p, keys));
     }
     else if(method == "get_config"){
-        result = DataTransfer::sendMsg(connection, getConfig());
+        result = DataTransfer::sendMsg(connection, getConfig(keys[0]));
     }
     else if(method == "done_operation"){
         result = DataTransfer::sendMsg(connection, doneOperation());

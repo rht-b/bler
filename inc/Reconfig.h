@@ -27,8 +27,7 @@ public:
     
     int reconfig(const Group& old_config, uint32_t old_conf_id, const Group& new_config, uint32_t new_conf_id);
 
-    int init_metadata_server(uint32_t confid_id, const Placement& p);
-    int update_metadata_info(uint32_t new_confid_id, const Placement& p, const std::vector<std::string>& keys);
+    int update_metadata_info(const string& operation, uint32_t new_confid_id, const Placement& p, const std::vector<std::string>& keys);
 
     int put(const std::string& key, const std::string& value);
     int get(const std::string& key, std::string& value);
@@ -48,7 +47,7 @@ private:
 
     int reconfig_one_key(const string& key, const Group& old_config, uint32_t old_conf_id, const Group& new_config, uint32_t new_conf_id);
 
-    int update_one_metadata_server(const std::string& metadata_server_ip, uint32_t metadata_server_port, uint32_t new_confid_id,
+    int update_one_metadata_server(const std::string& metadata_server_ip, uint32_t metadata_server_port, const std::string& operation, uint32_t new_confid_id,
                                    const Placement& p, const std::vector<std::string>& keys);
 };
 

@@ -31,7 +31,7 @@ public:
     const Placement& get_placement(const std::string& key, const bool force_update = false, const uint32_t conf_id = 0);
     const Placement& get_placement(const std::string& key, const bool force_update, const std::string& conf_id);
     const uint32_t& get_conf_id(const std::string& key);
-    bool getConfigAtMDS(Placement& p);
+    bool getConfigAtMDS(const string& key, Placement& p);
     bool recordDoneOprAtMDS();
     
     // getters
