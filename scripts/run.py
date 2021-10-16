@@ -13,7 +13,7 @@ import run_optimizer as optimizer
 from collections import OrderedDict
 import json
 
-server_type = "custom-1-1024" # "n1-standard-1" # "f1-micro" #"e2-standard-2"
+server_type = "e2-standard-8" # "n1-standard-1" # "f1-micro" #"e2-standard-2"
 client_type = "e2-standard-8"
 controller_type = "e2-standard-2"
 
@@ -588,7 +588,7 @@ def main(args):
         Machine.run_all(servers, clients)
         controller.run(clients)
         print("Project execution finished.\nPlease wait while I am stopping all the machines and gathering the logs...")
-        os.system("rm -rf /home/shahrooz/Desktop/PSU/Research/LEGOstore/scripts/data/CAS_NOF")
+        os.system("rm -rf /home/ubuntu/bler/scripts/data/CAS_NOF")
         Machine.stop_all(machines)
         Machine.gather_summary_all(clients)
         summarize()

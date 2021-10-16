@@ -14,7 +14,7 @@
 #include <fstream>
 
 #ifdef LOCAL_TEST
-#define DEBUGGING
+//#define DEBUGGING
 #endif
 
 using namespace std;

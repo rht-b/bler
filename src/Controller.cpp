@@ -510,6 +510,8 @@ int Controller::init_metadata_server(){
     vector<future<int>> rets;
     string operation  = "init_config";
 
+    auto epochStart = time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+
     const Group_config& gc = this->properties.group_configs[0];
     for(uint i = 0; i < gc.groups.size(); i++){
         rets.emplace_back(async(launch::async, &Reconfig::update_metadata_info, this->reconfigurer_p.get(), operation, gc.id, gc.groups[i].placement, gc.groups[i].keys));
@@ -520,6 +522,10 @@ int Controller::init_metadata_server(){
             assert(false);
         }
     }
+
+    auto epochEnd = time_point_cast<std::chrono::microseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+
+    cout << "init configuration latency: " << (double)(epochEnd - epochStart) / 1000. << endl;
     return 0;
 }
 
@@ -626,7 +632,7 @@ int Controller::run_reconfigurer(){ //Todo: make it more reliable
             auto epoch = time_point_cast<chrono::microseconds>(chrono::system_clock::now()).time_since_epoch().count();
             reconfigurer_p->reconfig(old, old_conf_id, curr, gc.id);
             auto epoch2 = time_point_cast<chrono::microseconds>(chrono::system_clock::now()).time_since_epoch().count();
-            cout << "reconfiguration latency: " << (double)(epoch2 - epoch) / 1000000. << endl;
+            cout << "reconfiguration latency: " << (double)(epoch2 - epoch) / 1000. << endl;
 
         }
 
@@ -686,7 +692,7 @@ int main(){
     Controller master(2, 1000000, 1000000, "./config/local_config.json",
                       "./config/auto_test/input_workload.json", "./config/auto_test/optimizer_output.json");
 #else
-    Controller master(2, 10000, 10000, "./config/auto_test/datacenters_access_info.json",
+    Controller master(2, 100000, 100000, "./config/auto_test/datacenters_access_info.json",
                       "./config/auto_test/input_workload.json", "./config/auto_test/optimizer_output.json");
 #endif
     std::future<int> client_executer_fut = std::async(&Controller::run_all_clients, &master);
