@@ -50,25 +50,33 @@ void message_handler(int connection, DataServer& dataserver, int portid, std::st
     std::string& method = data[0];
 
     if(method == "put"){
-        EASY_LOG_M(string("put, The key is ") + data[1] + " ts: " + data[2] + " value_size: " + to_string(data[3].size()) + " class: " + data[4]);
+        DPRINTF(DEBUG_ABD_Server, "put, The key is %s ts: %s value_size: %ld class: %s \n", data[1].c_str(), data[2].c_str(), data[3].size(), data[4].c_str());
+        // EASY_LOG_M(string("put, The key is ") + data[1] + " ts: " + data[2] + " value_size: " + to_string(data[3].size()) + " class: " + data[4]);
         result = DataTransfer::sendMsg(connection, dataserver.put(data[1], data[3], data[2], data[4], stoul(data[5])));
-        EASY_LOG_M("put finished");
+        DPRINTF(DEBUG_ABD_Server, "put finished");
+        // EASY_LOG_M("put finished");
     }
     else if(method == "get"){
-        EASY_LOG_M(string("get, The key is ") + data[1] + " class: " + data[2] + " confid: " + data[3]);
+        // EASY_LOG_M(string("get, The key is ") + data[1] + " class: " + data[2] + " confid: " + data[3]);
+        DPRINTF(DEBUG_ABD_Server, "get, The key is %s class: %s conf_id: %s\n", data[1].c_str(), data[2].c_str(), data[3].c_str());
         std::string phony_timestamp;
         result = DataTransfer::sendMsg(connection, dataserver.get(data[1], phony_timestamp, data[2], stoul(data[3])));
-        EASY_LOG_M("get finished");
+        // EASY_LOG_M("get finished");
+        DPRINTF(DEBUG_ABD_Server, "get finished");
     }
     else if(method == "get_timestamp"){
-        EASY_LOG_M(string("get_timestamp, The key is ") + data[1] + " class: " + data[2]);
+        // EASY_LOG_M(string("get_timestamp, The key is ") + data[1] + " class: " + data[2]);
+        DPRINTF(DEBUG_ABD_Server, "get_timestamp, The key is %s class: %s\n", data[1].c_str(), data[2].c_str());
         result = DataTransfer::sendMsg(connection, dataserver.get_timestamp(data[1], data[2], stoul(data[3])));
-        EASY_LOG_M("get_timestamp finished");
+        // EASY_LOG_M("get_timestamp finished");
+        DPRINTF(DEBUG_ABD_Server, "get_timestamp finished");
     }
     else if(method == "clear_key"){
-        EASY_LOG_M(string("clear_key, The key is ") + data[1] + " class: " + data[2]);
+        // EASY_LOG_M(string("clear_key, The key is ") + data[1] + " class: " + data[2]);
+        DPRINTF(DEBUG_ABD_Server, "clear_key, The key is %s class: %s\n", data[1].c_str(), data[2].c_str());
         result = DataTransfer::sendMsg(connection, dataserver.clear_key(data[1], data[2], stoul(data[3])));
-        EASY_LOG_M("clear_key finished");
+        // EASY_LOG_M("clear_key finished");
+        DPRINTF(DEBUG_ABD_Server, "clear_key finished");
     }
     else{
         EASY_LOG_M("MethodNotFound");

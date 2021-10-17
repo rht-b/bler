@@ -507,8 +507,12 @@ int main(int argc, char** argv){
         std::cout << "Enter the correct number of arguments: " << argv[0] << " <ext_ip> <port_no>" << std::endl;
         return -1;
     }
-    
+
+#ifdef LOCAL_TEST
     assert(read_detacenters_info("./config/local_config.json") == 0);
+#else
+    assert(read_detacenters_info("./config/auto_test/datacenters_access_info.json") == 0);
+#endif
 
     runServer(argv[2], argv[1]);
     
