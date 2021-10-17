@@ -242,7 +242,7 @@ string doneOperation() {
     return DataTransfer::serializeMDS("OK", "counter="+to_string(counter));
 }
 
-bool readFromOldCfgToWriteToNewCfg(const std::string& key, const Value* nextConfig) {
+void readFromOldCfgToWriteToNewCfg(const std::string& key, const Value* nextConfig, promise <bool>&& prm) {
     assert(keyConfMap[key].first->placement.protocol == ABD_PROTOCOL_NAME);
 
     int op_status = 0;    // 0: Success, -1: timeout
@@ -262,12 +262,13 @@ bool readFromOldCfgToWriteToNewCfg(const std::string& key, const Value* nextConf
         datacenters, 
         keyConfMap[key].first->placement.protocol,
         keyConfMap[key].first->confid,
-        10000, // TODO pass it in command line args 
+        100000, // TODO pass it in command line args 
         ret);
 
     DPRINTF(DEBUG_METADATA_SERVER, "get op_status: %d.\n", op_status);
     if(op_status == -1) {
-        return false;
+        prm.set_value(false);
+        return;
     }
 
     for(auto it = ret.begin(); it != ret.end(); it++) {
@@ -283,20 +284,21 @@ bool readFromOldCfgToWriteToNewCfg(const std::string& key, const Value* nextConf
     idx = Timestamp::max_timestamp3(tss);
     
     // Issue cancel for key in oldConfig
-    op_status = ABD_helper_propagate_state::failure_support_optimized(
-        "clear_key", key, "", "",
-        keyConfMap[key].first->placement.servers.size(), // TODO check if we really need to issue cancel to all servers 
-        keyConfMap[key].first->placement.servers, 
-        datacenters, 
-        keyConfMap[key].first->placement.protocol,
-        keyConfMap[key].first->confid,
-        10000, // TODO pass it in command line args 
-        ret);
+    // op_status = ABD_helper_propagate_state::failure_support_optimized(
+    //     "clear_key", key, "", "",
+    //     keyConfMap[key].first->placement.servers.size(), // TODO check if we really need to issue cancel to all servers 
+    //     keyConfMap[key].first->placement.servers, 
+    //     datacenters, 
+    //     keyConfMap[key].first->placement.protocol,
+    //     keyConfMap[key].first->confid,
+    //     100000, // TODO pass it in command line args 
+    //     ret);
 
-    DPRINTF(DEBUG_METADATA_SERVER, "clear_key op_status: %d.\n", op_status);
-    if(op_status == -1) {
-        return false;
-    }
+    // DPRINTF(DEBUG_METADATA_SERVER, "clear_key op_status: %d.\n", op_status);
+    // if(op_status == -1) {
+    //     prm.set_value(false);
+    //     return;
+    // }
     // No need to check ret vector for "OK" status
 
     // Issue write (v, t*) for key in newConfig and wait for Q2 quorum
@@ -312,7 +314,8 @@ bool readFromOldCfgToWriteToNewCfg(const std::string& key, const Value* nextConf
 
     DPRINTF(DEBUG_METADATA_SERVER, "put op_status: %d.\n", op_status);
     if(op_status == -1) {
-        return false;
+        prm.set_value(false);
+        return;
     }
 
     for(auto it = ret.begin(); it != ret.end(); it++) {
@@ -324,8 +327,9 @@ bool readFromOldCfgToWriteToNewCfg(const std::string& key, const Value* nextConf
             assert(false); // Bad message received from server
         }
     }
-
-    return true;
+    
+    prm.set_value(true);
+    return;
 }
 
 string setConfig(uint32_t new_conf_id, const Placement& new_placement, const std::vector<std::string>& keys) {
@@ -349,9 +353,18 @@ string setConfig(uint32_t new_conf_id, const Placement& new_placement, const std
         DPRINTF(DEBUG_METADATA_SERVER, "setConfig awoke counter=%ld\n", counter);
     }
 
+    map <string, future<bool> > responses;
     for(string key:keys) {
-        bool status = readFromOldCfgToWriteToNewCfg(key, nextConfig);
-        assert(status);
+        promise <bool> prm;
+        responses.emplace(key, prm.get_future());
+        thread(&readFromOldCfgToWriteToNewCfg, key, nextConfig, move(prm)).detach();
+        // bool status = readFromOldCfgToWriteToNewCfg(key, nextConfig);
+        // assert(status);
+    }
+
+    for(auto respit = responses.begin(); respit != responses.end(); respit++) {
+        bool ret_obj = respit->second.get();
+        assert(ret_obj);
     }
 
     for(string key:keys) { // one iteration should suffice
