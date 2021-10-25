@@ -49,10 +49,10 @@ using namespace std::chrono;
 #define CLIENT_PORT 10001~
 #define MAX_LINGER_BEFORE_SOCK_CLOSE 50
 
-//#define No_GET_OPTIMIZED
+#define No_GET_OPTIMIZED
 //#define LOCAL_TEST
 #define USE_TCP_NODELAY
-//#define DO_WARM_UP
+#define DO_WARM_UP
 
 #ifdef LOCAL_TEST
 #define NUMBER_OF_OPS_FOR_WARM_UP 2
@@ -217,10 +217,10 @@ int get_random_number_uniform(int min, int max, int seed = std::chrono::system_c
 double get_random_real_number_uniform(double min, double max, int seed = std::chrono::system_clock::now().time_since_epoch().count());
 
 #ifdef LOCAL_TEST
-#define WARM_UP_DELAY 30
+#define WARM_UP_DELAY 1
 #define WARM_UP_SIZE (1024)
 #else
-#define WARM_UP_DELAY 300
+#define WARM_UP_DELAY 1
 #define WARM_UP_SIZE (2 * 1024)
 #endif
 

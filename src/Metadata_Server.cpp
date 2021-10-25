@@ -196,6 +196,38 @@ namespace ABD_helper_propagate_state{
     }
 }
 
+int warm_up_one_connection(const string& ip, uint32_t port){
+
+    string temp = string(WARM_UP_MNEMONIC) + get_random_string();
+    Connect c(ip, port);
+    if(!c.is_connected()){
+        assert(false);
+        return -1;
+    }
+    DataTransfer::sendMsg(*c, temp);
+    string recvd;
+    if(DataTransfer::recvMsg(*c, recvd) == 1){
+        if(!is_warmup_message(recvd)){
+            assert(false);
+        }
+    }
+    else{
+        assert(false);
+    }
+
+    return S_OK;
+}
+
+int warm_up(){
+
+    for(auto it = datacenters.begin(); it != datacenters.end(); it++){
+        warm_up_one_connection((*it)->servers[0]->ip, (*it)->servers[0]->port);
+        // this_thread::sleep_for(milliseconds(get_random_number_uniform(0, 20)));
+    }
+
+    return S_OK;
+}
+
 string initConfig(uint32_t curr_conf_id, const Placement& p, const vector<string>& keys) {
     unique_lock<mutex> nc_lock(next_config_lock_t);
     unique_lock<mutex> lock(lock_t);
@@ -210,6 +242,9 @@ string initConfig(uint32_t curr_conf_id, const Placement& p, const vector<string
         keyConfMap[keys[i]].first = currConfig;
         keyConfMap[keys[i]].second = nextConfig;
     }
+
+    // extablish connections to all the other server asynchronsly
+    thread(&warm_up).detach();
 
     return DataTransfer::serializeMDS("OK", "");
 }
@@ -525,7 +560,7 @@ int main(int argc, char** argv){
     assert(read_detacenters_info("./config/local_config.json") == 0);
 #else
     assert(read_detacenters_info("./config/auto_test/datacenters_access_info.json") == 0);
-#endif
+#endif    
 
     runServer(argv[2], argv[1]);
     

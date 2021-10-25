@@ -15,10 +15,8 @@ import json
 from collections import OrderedDict
 from pylab import *
 
-# Todo: I know read_operation_for_key is not optimized at all... It's late night and I am too tired to think of a better solution! (:
-
 # path = "data/CAS_NOF"
-path = "data/CAS_NOF/"
+# path = "data/LAST_RES/CAS_NOF_O->LO"
 # path = "data/CAS_NOF_C"
 # path = "data/arrival_rate/HR/CAS_NOF"
 # path = "data/object_number/RW/CAS_NOF"
@@ -27,95 +25,43 @@ path = "data/CAS_NOF/"
 # path = "data/ARIF/CAS_NOF_HIGHDUR_OPTIMIZEDTRUE"
 # path = "data/ARIF/CAS_NOF_HIGHDUR_3"
 # path = "data/LAST_RES/CAS_NOF_One_hour_exec_for_latency_verifi"
-# path = "data/arrival_rate/HW/CAS_NOF"
+path = "data/arrival_rate/RW/CAS_NOF"
 
 
-keys = ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"] #["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010"]#, "222222", "222223"]
+keys = ["20", "21", "22", "23", "24", "25", "26", "27", "28", "29"] #["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010"]#, "222222", "222223"]
 servers = ["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"]
 
-def read_operation_for_key(key, log_path, clients):
+def read_operation_for_key(key, log_path):
     log_files_names = [os.path.join(log_path, f) for f in os.listdir(log_path) if os.path.isfile(os.path.join(log_path, f))]
     get_operations = []
     put_operations = []
-
-    start_timepoint = float("inf")
-
-    for c in clients:
-        get_operations.append([])
-        put_operations.append([])
-
     for file in log_files_names:
         log = open(file, 'r')
         lines = log.readlines()
-        for client_index, client in enumerate(clients):
-            for line in lines:
-                # print(file, line)
-                words = line.split()
+        for line in lines:
+            # print(file, line)
+            words = line.split()
+            if (words[2][:-1] != key):
+                continue
 
-                start_time = int(words[4][:-1])
-                if start_timepoint > start_time:
-                    start_timepoint = start_time
+            if (words[1][:-1] == "get"):
+                latency = (int(words[5]) - int(words[4][:-1])) / 1000
+                if latency < 250:
+                    print(words[0][:-1])
+                get_operations.append([int(words[4][:-1]), latency, file])
 
-                #if (words[2][:-1] != key):
-                #   continue
+            if (words[1][:-1] == "put"):
+                latency = (int(words[5]) - int(words[4][:-1])) / 1000
 
-                if (words[0][:-1] != client):
-                    continue
+                put_operations.append([int(words[4][:-1]), latency, file])
 
-                if (words[1][:-1] == "get"):
-                    latency = (int(words[5]) - int(words[4][:-1])) / 1000
-                    get_operations[client_index].append([int(words[4][:-1]), latency])
-
-                if (words[1][:-1] == "put"):
-                    latency = (int(words[5]) - int(words[4][:-1])) / 1000
-                    put_operations[client_index].append([int(words[4][:-1]), latency])
-
-                if latency > 5000:
-                    print(file, line)
-
-            get_operations[client_index].sort(key=lambda x: x[0])
-            put_operations[client_index].sort(key=lambda x: x[0])
+            if latency > 5000:
+                print(file, line)
 
         log.close()
 
-    # get_operations.sort(key=lambda x: x[0])
-    # put_operations.sort(key=lambda x: x[0])
-    print(start_timepoint)
-
-    get_operations_t = []
-    put_operations_t = []
-    for c in clients:
-        get_operations_t.append([])
-        put_operations_t.append([])
-
-    getOptr = []
-    getOptr.append([])
-    getOptr.append([])
-    putOptr = []
-    putOptr.append([])
-    putOptr.append([])
-
-    for client_index, client in enumerate(clients):
-        for el in get_operations[client_index]:
-            get_operations_t[client_index].append([el[0] - start_timepoint, el[1]])
-            getOptr[0].append((el[0] - start_timepoint)/1000000+4)
-            getOptr[1].append(el[1])
-        for el in put_operations[client_index]:
-            put_operations_t[client_index].append([el[0] - start_timepoint, el[1]])
-            putOptr[0].append((el[0] - start_timepoint)/1000000+4)
-            putOptr[1].append(el[1])
-
-    print(len(getOptr[0]), len(getOptr[1]))
-    print(len(putOptr[0]), len(putOptr[1]))
-    print("s8GetOptr= [", ",".join(str(e) for e in getOptr[0]), "; ", ",".join(str(e) for e in getOptr[1]), "];")
-    print()
-    # print(putOptr)
-    print("s8PutOptr= [", ",".join(str(e) for e in putOptr[0]), "; ", ",".join(str(e) for e in putOptr[1]), "];")
-    print()
-    print()
-
-    get_operations = get_operations_t
-    put_operations = put_operations_t
+    get_operations.sort(key=lambda x: x[0])
+    put_operations.sort(key=lambda x: x[0])
 
     return get_operations, put_operations
 
@@ -180,163 +126,156 @@ def plot_one_key_one_server(key, server):
     plt.ylabel('latency(ms)')
     plt.grid(True)
 
-def standardize_clients(clients):
-    clients.sort()
-    clients_str = []
-    for c in clients:
-        clients_str.append(str(c))
-    clients = clients_str
-    return clients
-
 def plot_latencies(key):
-
-    server = "s0"
+    server = "s8"
     log_path = os.path.join(path, server)
     log_path = os.path.join(log_path, "logs")
-    log_files_names = [os.path.join(log_path, f) for f in os.listdir(log_path) if os.path.isfile(os.path.join(log_path, f))]
-
-    clients = []
-    for fnm in log_files_names:
-        clients.append(fnm[(fnm.index("logfile_")+8):-4])
-    
-    clients = standardize_clients(clients)
-
-    #clients = [537395210, 537399299, 537399311, 537399315, 537395212, 537399306]
-    #clients = standardize_clients(clients)
-    get_operations, put_operations = read_operation_for_key(key, log_path, clients)
-
-    # print(get_operations)
+    get_operations, put_operations = read_operation_for_key(key, log_path)
 
     plots = []
     plt.rcParams.update({'font.size': 38})
+
     fig = plt.figure()
     ax = fig.add_axes([0.09, 0.57, .88, .35])
     ax2 = fig.add_axes([0.09, 0.1, .88, .35])
-    area = 500
 
-    ax.plot([0, 600], [400, 400], "-", color="r", linewidth=4.0, label="Latency SLO")
-    ax2.plot([0, 600], [400, 400], "-", color="r", linewidth=4.0, label="Latency SLO")
+    # plots.append(plt.figure())
+    x = np.array([(a[0] - get_operations[0][0]) / 1000 for a in get_operations]) / 1000.
+    y = [a[1] for a in get_operations]
+    ax.scatter(x, y, color="b")
+    # plt.plot(y, '.-g')
+    # ax.title(server + ":get_operations")
+    ax2.set_xlabel('Time (sec)')
+    ax.set_ylabel('Latency (msec)')
+    ax2.set_ylabel('Latency (msec)')
+    ax.grid(True)
+    ax2.grid(True)
 
-    for client_index, client in enumerate(clients):
-        x = np.array([(a[0]) / 1000 for a in get_operations[client_index]]) / 1000.
-        y = [a[1] for a in get_operations[client_index]]
-        ax.scatter(x, y, label="Client " + str(client_index + 1), s=.5 * area)
-
-    # server = "s7"
-    # log_path = os.path.join(path, server)
-    # log_path = os.path.join(log_path, "logs")
-    # clients = [470286347, 470286346, 470290441, 470286353, 470286351]
-    # clients = standardize_clients(clients)
-    # get_operations, put_operations = read_operation_for_key(key, log_path, clients)
-
-    # for client_index, client in enumerate(clients):
-    #     # x = np.array([(a[0]) / 1000 for a in get_operations[client_index]]) / 1000.
-    #     x = (np.array([(a[0]) / 1000 for a in get_operations[client_index]]) + 300000) / 1000.
-    #     y = [a[1] for a in get_operations[client_index]]
-    #     ax2.scatter(x, y, label="Client " + str(client_index + 1 + 5), s=.5 * area)
-
-    # ax2.set_xlabel('Time (sec)')
-    # ax.set_ylabel('Latency (msec)')
-    # ax2.set_ylabel('Latency (msec)')
-    # ax.grid(True)
-    # ax2.grid(True)
-    # ax.set_ylim(0, 1050)  # outlier 2
-    # ax2.set_ylim(0, 1000)
-    # ax2.set_xlim(0, 600)
-    # ax.set_xlim(0, 600)
-    # major_ticks = np.arange(0, 1001, 250)
-    # minor_ticks = np.arange(0, 601, 25)
-    # ax.set_yticks(major_ticks)
-    # ax2.set_yticks(major_ticks)
-    # ax2.set_xticks(minor_ticks, minor=True)
-    # ax.set_xticks(minor_ticks, minor=True)
-    # ax.grid(which='minor', alpha=0.5)
-    # ax.grid(which='major', alpha=1)
-    # ax2.grid(which='minor', alpha=0.5)
-    # ax2.grid(which='major', alpha=1)
-    # ax2.spines['top'].set_visible(False)
-    # ax2.tick_params(labeltop=False)
-    # ax.spines['top'].set_visible(False)
-    # ax.tick_params(labeltop=False)
-    # ax.tick_params(labelbottom=False)
-    # ax.set_title("GET Operations from Oregon users")
-    # ax2.set_title("GET Operations from LA users")
+    # ax2.set_xticks(x)
+    # ax.set_xticks(x)
+    # ax2.set_xticklabels(labels)
     # ax.legend()
-    # ax2.legend()
+    ax.set_ylim(0, 1050)  # outlier 2
+    ax2.set_ylim(0, 1000)
+    ax2.set_xlim(0, 600)
+    ax.set_xlim(0, 600)
+    # ax.set_yticks([525, 575])
+    # ax2.set_ylim(0, 280)  # most of the data
+
+    major_ticks = np.arange(0, 1001, 250)
+    minor_ticks = np.arange(0, 601, 25)
+
+    ax.set_yticks(major_ticks)
+    ax2.set_yticks(major_ticks)
+
+    ax2.set_xticks(minor_ticks, minor=True)
+    ax.set_xticks(minor_ticks, minor=True)
+
+    ax.grid(which='minor', alpha=0.5)
+    ax.grid(which='major', alpha=1)
+
+    ax2.grid(which='minor', alpha=0.5)
+    ax2.grid(which='major', alpha=1)
+
+    ax2.spines['top'].set_visible(False)
+    ax2.tick_params(labeltop=False)
+
+    ax.spines['top'].set_visible(False)
+    # ax.spines['bottom'].set_visible(False)
+    ax.tick_params(labeltop=False)
+    ax.tick_params(labelbottom=False)
+    ax.set_title("GET Operations from Oregon users")
+    ax2.set_title("GET Operations from LA users")
+
+    server = "s7"
+    log_path = os.path.join(path, server)
+    log_path = os.path.join(log_path, "logs")
+    get_operations, put_operations = read_operation_for_key(key, log_path)
+    x = (np.array([(a[0] - get_operations[0][0]) / 1000 for a in get_operations]) + 300000) / 1000.
+    y = [a[1] for a in get_operations]
+    ax2.scatter(x, y, color="b")
 
 
 
 
+    # put
+    server = "s8"
+    log_path = os.path.join(path, server)
+    log_path = os.path.join(log_path, "logs")
+    get_operations, put_operations = read_operation_for_key(key, log_path)
 
+    plots = []
+    plt.rcParams.update({'font.size': 38})
 
+    fig = plt.figure()
+    ax = fig.add_axes([0.09, 0.57, .88, .35])
+    ax2 = fig.add_axes([0.09, 0.1, .88, .35])
 
-    # # put
-    # server = "s8"
-    # log_path = os.path.join(path, server)
-    # log_path = os.path.join(log_path, "logs")
-    # clients = [537395210, 537399299, 537399311, 537399315, 537395212, 537399306]
-    # clients = standardize_clients(clients)
-    # get_operations, put_operations = read_operation_for_key(key, log_path, clients)
+    # plots.append(plt.figure())
+    x = np.array([(a[0] - put_operations[0][0]) / 1000 for a in put_operations]) / 1000.
+    y = [a[1] for a in put_operations]
+    ax.scatter(x, y, color="g")
+    # plt.plot(y, '.-g')
+    # ax.title(server + ":put_operations")
+    ax2.set_xlabel('Time (sec)')
+    ax.set_ylabel('Latency (msec)')
+    ax2.set_ylabel('Latency (msec)')
+    ax.grid(True)
+    ax2.grid(True)
 
-    # plots = []
-    # plt.rcParams.update({'font.size': 38})
-
-    # fig = plt.figure()
-    # ax = fig.add_axes([0.09, 0.57, .88, .35])
-    # ax2 = fig.add_axes([0.09, 0.1, .88, .35])
-    # area = 500
-
-    # ax.plot([0, 600], [400, 400], "-", color="r", linewidth=4.0, label="Latency SLO")
-    # ax2.plot([0, 600], [400, 400], "-", color="r", linewidth=4.0, label="Latency SLO")
-
-    # for client_index, client in enumerate(clients):
-    #     x = np.array([(a[0]) / 1000 for a in put_operations[client_index]]) / 1000.
-    #     y = [a[1] for a in put_operations[client_index]]
-    #     ax.scatter(x, y, label="Client " + str(client_index + 1 + 10), s=.5 * area)
-
-    # server = "s7"
-    # log_path = os.path.join(path, server)
-    # log_path = os.path.join(log_path, "logs")
-    # clients = [470286347, 470286346, 470290441, 470286353, 470286351]
-    # clients = standardize_clients(clients)
-    # get_operations, put_operations = read_operation_for_key(key, log_path, clients)
-
-    # for client_index, client in enumerate(clients):
-    #     x = (np.array([(a[0]) / 1000 for a in put_operations[client_index]]) + 300000) / 1000.
-    #     y = [a[1] for a in put_operations[client_index]]
-    #     ax2.scatter(x, y, label="Client " + str(client_index + 1 + 15), s=.5 * area)
-
-
-    # ax2.set_xlabel('Time (sec)')
-    # ax.set_ylabel('Latency (msec)')
-    # ax2.set_ylabel('Latency (msec)')
-    # ax.grid(True)
-    # ax2.grid(True)
-    # ax.set_ylim(0, 1050)  # outlier 2
-    # ax2.set_ylim(0, 1000)
-    # ax2.set_xlim(0, 600)
-    # ax.set_xlim(0, 600)
-    # major_ticks = np.arange(0, 1001, 250)
-    # minor_ticks = np.arange(0, 601, 25)
-    # ax.set_yticks(major_ticks)
-    # ax2.set_yticks(major_ticks)
-    # ax2.set_xticks(minor_ticks, minor=True)
-    # ax.set_xticks(minor_ticks, minor=True)
-    # ax.grid(which='minor', alpha=0.5)
-    # ax.grid(which='major', alpha=1)
-    # ax2.grid(which='minor', alpha=0.5)
-    # ax2.grid(which='major', alpha=1)
-    # ax2.spines['top'].set_visible(False)
-    # ax2.tick_params(labeltop=False)
-    # ax.spines['top'].set_visible(False)
-    # ax.tick_params(labeltop=False)
-    # ax.tick_params(labelbottom=False)
-    # ax.set_title("PUT Operations from Oregon users")
-    # ax2.set_title("PUT Operations from LA users")
+    # ax2.set_xticks(x)
+    # ax.set_xticks(x)
+    # ax2.set_xticklabels(labels)
     # ax.legend()
-    # ax2.legend()
+    ax.set_ylim(0, 1050)  # outlier 2
+    ax2.set_ylim(0, 1000)
+    ax2.set_xlim(0, 600)
+    ax.set_xlim(0, 600)
+    # ax.set_yticks([525, 575])
+    # ax2.set_ylim(0, 280)  # most of the data
+
+    major_ticks = np.arange(0, 1001, 250)
+    minor_ticks = np.arange(0, 601, 25)
+
+    ax.set_yticks(major_ticks)
+    ax2.set_yticks(major_ticks)
+
+    ax2.set_xticks(minor_ticks, minor=True)
+    ax.set_xticks(minor_ticks, minor=True)
+
+    ax.grid(which='minor', alpha=0.5)
+    ax.grid(which='major', alpha=1)
+
+    ax2.grid(which='minor', alpha=0.5)
+    ax2.grid(which='major', alpha=1)
+
+    ax2.spines['top'].set_visible(False)
+    ax2.tick_params(labeltop=False)
+
+    ax.spines['top'].set_visible(False)
+    # ax.spines['bottom'].set_visible(False)
+    ax.tick_params(labeltop=False)
+    ax.tick_params(labelbottom=False)
+    ax.set_title("PUT Operations on Oregon clients")
+    ax2.set_title("PUT Operations on LA clients")
+
+    server = "s7"
+    log_path = os.path.join(path, server)
+    log_path = os.path.join(log_path, "logs")
+    get_operations, put_operations = read_operation_for_key(key, log_path)
+    x = (np.array([(a[0] - put_operations[0][0]) / 1000 for a in put_operations]) + 300000) / 1000.
+    y = [a[1] for a in put_operations]
+    ax2.scatter(x, y, color="g")
 
 
+    # plots.append(plt.figure())
+    # x = [(a[0] - put_operations[0][0]) / 1000 for a in put_operations]
+    # y = [a[1] for a in put_operations]
+    # plt.scatter(x, y, color="g")
+    # plt.title(server + ":put_operations")
+    # plt.xlabel('time(ms)')
+    # plt.ylabel('latency(ms)')
+    # plt.grid(True)
 
 def print_one_key_one_server(key, server):
     log_path = os.path.join(path, server)
@@ -463,7 +402,7 @@ def plot_total_cost_per_configuration(configs):
     plt.grid(True)
 
 def draw_latencies_based_on_arrival_rate_for_server(server):
-    arrival_rates = list(range(20, 101, 20))
+    arrival_rates = list(range(20, 21, 20))
 
     put_avg = []
     get_avg = []
@@ -509,11 +448,11 @@ def draw_latencies_based_on_arrival_rate_for_server(server):
 
     # plt.figure()
 
-    plt.rcParams.update({'font.size': 44})
+    plt.rcParams.update({'font.size': 44*1.7})
     # fig, ax = plt.subplots()
     fig = plt.figure()
     # ax = fig.add_axes([0.07, 0.09, .68, .88])
-    ax = fig.add_axes([0.1, 0.1, .88, .88])
+    ax = fig.add_axes([0.13, 0.15, .85, .83])
 
     x = arrival_rates
 
@@ -525,7 +464,7 @@ def draw_latencies_based_on_arrival_rate_for_server(server):
     # plt.plot(x, put_tail_95, color="c", linewidth=4.0)
 
     ax.scatter(x, put_avg, s=1 * area, linewidth=10, facecolors='none', edgecolors="b", label='put avg')
-    ax.plot(x, put_avg, "--", color="b")
+    ax.plot(x, put_avg, "--", color="b", linewidth=5.0)
 
     ax.scatter(x, get_tail_99, s=1.75 * area, c="lime", label='get 99%')
     ax.plot(x, get_tail_99, "--", color="lime", linewidth=5.0)
@@ -652,12 +591,66 @@ def main():
 
     plt.show()
 
+def draw_reconf_latencies_based_on_arrival_rate_for_controller():
+    arrival_rates = [20, 40, 60, 80, 100, 200, 300]
+
+    init_rec_latency_bler = [491.709, 489.665, 492.057, 492.45, 492.431, 490.722, 491.714]
+    rec_latency_bler = [4586.08,5095.89,5017.33,5082.02,5027.63,5097.38,5213.73]
+    init_rec_latency_nobler = [1783.41,1798.58,1791.3,1796.91,1798.79,1797.52,1793.26]
+    rec_latency_nobler = [3684.74,3681.23,3672.4,3678.1,3678.27,3681.23,3665.9]
+
+
+    # plt.figure()
+
+    plt.rcParams.update({'font.size': 44*1.7})
+    # fig, ax = plt.subplots()
+    fig = plt.figure()
+    # ax = fig.add_axes([0.07, 0.09, .68, .88])
+    ax = fig.add_axes([0.13, 0.15, .85, .83])
+
+    x = arrival_rates
+
+    colors = ["r", "b", "g"]
+    area = 500
+
+    ax.scatter(x, init_rec_latency_nobler, s=1.75 * area, c="darkslateblue", label='put 99%')
+    ax.plot(x, init_rec_latency_nobler, "--", color="darkslateblue", linewidth=5.0)
+    # plt.plot(x, put_tail_95, color="c", linewidth=4.0)
+
+    ax.scatter(x, rec_latency_nobler, s=1 * area, linewidth=10, facecolors='none', edgecolors="b", label='put avg')
+    ax.plot(x, rec_latency_nobler, "--", color="b", linewidth=5.0)
+
+    ax.scatter(x, init_rec_latency_bler, s=1.75 * area, c="lime", label='get 99%')
+    ax.plot(x, init_rec_latency_bler, "--", color="lime", linewidth=5.0)
+
+    ax.scatter(x, rec_latency_bler, s=1 * area, linewidth=10, facecolors='none', edgecolors="r", label='get avg')
+    ax.plot(x, rec_latency_bler, "--", color="r", linewidth=5.0)
+
+
+    # plt.plot(x, get_tail_99, ":", color="lime", linewidth=15.0, label='get 99%')
+    # plt.plot(x, get_tail_95, color="tab:pink", linewidth=4.0)
+    # plt.plot(x, get_avg, "-.", color="r", linewidth=15.0, label='get avg')
+
+    # legs = plt.legend(["put avg", "put tail 95", "put tail_99", "get_avg", "get_tail_95", "get_tail_99"])
+    legs = plt.legend()
+    for leg in legs.get_lines():
+        leg.set_linewidth(7)
+    # plt.plot(y, '.-g')
+    # plt.title(server + "")
+    plt.xlabel('Arrival rate (req/sec)')
+    plt.ylabel('Reconfiguration Latency (ms)')
+
+    limits = ax.axis()
+    ax.axis([limits[0], limits[1], 0, limits[3]])
+
+    plt.grid(True)
+
 
 if __name__ == "__main__":
     # main()
 
     # for i in range(10):
-    plot_latencies(keys[4])
+    # plot_latencies(keys[4])
 
     # plot_reconfiguration_latencies()
 
@@ -686,7 +679,7 @@ if __name__ == "__main__":
     #    draw_latencies_based_on_arrival_rate_for_server(server)
        #  draw_latencies_based_on_object_number_for_server(server)
 
-    # draw_latencies_based_on_arrival_rate_for_server(servers[0])
+    draw_reconf_latencies_based_on_arrival_rate_for_controller()
 
 
-    #plt.show()
+    plt.show()

@@ -211,12 +211,13 @@ int warm_up(){
 
     for(auto it = datacenters.begin(); it != datacenters.end(); it++){
         warm_up_one_connection((*it)->metadata_server_ip, (*it)->metadata_server_port);
-        std::this_thread::sleep_for(milliseconds(get_random_number_uniform(0, 2000)));
+        std::this_thread::sleep_for(milliseconds(get_random_number_uniform(0, 20)));
+        break;
     }
 
     for(auto it = datacenters.begin(); it != datacenters.end(); it++){
         warm_up_one_connection((*it)->servers[0]->ip, (*it)->servers[0]->port);
-        std::this_thread::sleep_for(milliseconds(get_random_number_uniform(0, 2000)));
+        std::this_thread::sleep_for(milliseconds(get_random_number_uniform(0, 20)));
     }
 
     return S_OK;
@@ -351,9 +352,7 @@ int run_session(uint req_idx){
 
 #ifdef DO_WARM_UP
     // WARM UP THE SOCKETS
-    auto timePoint3 += start_point + seconds(WARM_UP_DELAY);
     warm_up();
-    std::this_thread::sleep_until(timePoint3);
 #endif
     
     auto end_point = start_point + seconds(run_session_duration);

@@ -13,8 +13,8 @@ import run_optimizer as optimizer
 from collections import OrderedDict
 import json
 
-server_type = "e2-standard-8" # "n1-standard-1" # "f1-micro" #"e2-standard-2"
-client_type = "e2-standard-8"
+server_type = "e2-standard-2" # "n1-standard-1" # "f1-micro" #"e2-standard-2"
+client_type = "e2-standard-2"
 controller_type = "e2-standard-2"
 
 
@@ -62,7 +62,7 @@ def read_zones(zones_file_name='zones.txt'):
 files_lock = threading.Lock()
 def create_project_tar_file():
     files_lock.acquire()
-    os.system("./copy.sh")
+    os.system("bash copy.sh")
 
 def delete_project_tar_file():
     os.system("rm -rf project2.tar.gz project")
@@ -170,18 +170,18 @@ class Machine:
             ret = ""
             ret += '    "' + server.name[1] + '": {\n'
             ret += '        "metadata_server": {\n'
-            ret += '            "host": "' + server.external_ip + '",\n'
+            ret += '            "host": "' + servers["s7"].internal_ip + '",\n'
             ret += '            "port": "30000"\n'
             ret += '        },\n'
             ret += '        "servers": {\n'
             ret += '            "1": {\n'
-            ret += '                "host": "' + server.external_ip + '",\n'
+            ret += '                "host": "' + server.internal_ip + '",\n'
             ret += '                "port": "10000"\n'
             ret += '            }\n'
             ret += '        },\n'
             ret += '        "clients": {\n'
             ret += '            "1": {\n'
-            ret += '                "host": "' + client.external_ip + '"\n'
+            ret += '                "host": "' + client.internal_ip + '"\n'
             ret += '            }\n'
             ret += '        }\n'
             if i != len(servers) - 1:
@@ -667,6 +667,7 @@ if __name__ == '__main__':
     # print(can_project_be_built())
 
     main(args)
+
     # arrival_rate_test(args)
     # object_number_test(args)
 

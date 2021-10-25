@@ -6,7 +6,7 @@
       "grp_workload": [
         {
           "id": 0,
-          "availability_target": 2,
+          "availability_target": 1,
           "client_dist": [
             0.1111111111,
             0.1111111111,
@@ -20,8 +20,8 @@
           ],
           "object_size": 1024,
           "metadata_size": 1e-09,
-          "num_objects": 10001,
-          "arrival_rate": 20,
+          "num_objects": 1,
+          "arrival_rate": 100,
           "read_ratio": 0.5,
           "write_ratio": 0.5,
           "SLO_read": 1000,
@@ -29,74 +29,18 @@
           "duration": 60,
           "time_to_decode": 0.00028,
           "keys": [
-            "20", "30", "40"
-          ]
-        },
-        {
-          "id": 1,
-          "availability_target": 2,
-          "client_dist": [
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111
-          ],
-          "object_size": 2048,
-          "metadata_size": 1e-09,
-          "num_objects": 10001,
-          "arrival_rate": 30,
-          "read_ratio": 0.5,
-          "write_ratio": 0.5,
-          "SLO_read": 1000,
-          "SLO_write": 1000,
-          "duration": 60,
-          "time_to_decode": 0.00028,
-          "keys": [
-            "50", "60"
-          ]
-        },
-        {
-          "id": 2,
-          "availability_target": 2,
-          "client_dist": [
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111
-          ],
-          "object_size": 1024,
-          "metadata_size": 1e-09,
-          "num_objects": 10001,
-          "arrival_rate": 20,
-          "read_ratio": 0.5,
-          "write_ratio": 0.5,
-          "SLO_read": 1000,
-          "SLO_write": 1000,
-          "duration": 60,
-          "time_to_decode": 0.00028,
-          "keys": [
-            "70", "80"
+            "10"
           ]
         }
       ]
     },
     {
-      "timestamp": 20,
+      "timestamp": 30,
       "id": 2,
       "grp_workload": [
         {
           "id": 0,
-          "availability_target": 2,
+          "availability_target": 1,
           "client_dist": [
             0.1111111111,
             0.1111111111,
@@ -110,8 +54,8 @@
           ],
           "object_size": 1024,
           "metadata_size": 1e-09,
-          "num_objects": 10001,
-          "arrival_rate": 20,
+          "num_objects": 1,
+          "arrival_rate": 100,
           "read_ratio": 0.5,
           "write_ratio": 0.5,
           "SLO_read": 1000,
@@ -119,63 +63,7 @@
           "duration": 60,
           "time_to_decode": 0.00028,
           "keys": [
-            "20", "30", "40"
-          ]
-        },
-        {
-          "id": 1,
-          "availability_target": 2,
-          "client_dist": [
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111
-          ],
-          "object_size": 2048,
-          "metadata_size": 1e-09,
-          "num_objects": 10001,
-          "arrival_rate": 30,
-          "read_ratio": 0.5,
-          "write_ratio": 0.5,
-          "SLO_read": 1000,
-          "SLO_write": 1000,
-          "duration": 60,
-          "time_to_decode": 0.00028,
-          "keys": [
-            "50", "60"
-          ]
-        },
-        {
-          "id": 2,
-          "availability_target": 2,
-          "client_dist": [
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111,
-            0.1111111111
-          ],
-          "object_size": 1024,
-          "metadata_size": 1e-09,
-          "num_objects": 10001,
-          "arrival_rate": 20,
-          "read_ratio": 0.5,
-          "write_ratio": 0.5,
-          "SLO_read": 1000,
-          "SLO_write": 1000,
-          "duration": 60,
-          "time_to_decode": 0.00028,
-          "keys": [
-            "70", "80"
+            "10"
           ]
         }
       ]

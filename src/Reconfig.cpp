@@ -380,6 +380,7 @@ int Reconfig::update_metadata_info(const string& operation, uint32_t new_confid_
     for(uint k = 0; k < datacenters.size(); k++){
         rets.emplace_back(async(launch::async, &Reconfig::update_one_metadata_server, this, datacenters[k]->metadata_server_ip,
                                 datacenters[k]->metadata_server_port, operation, new_confid_id, p, keys));
+        break; // because we have just one global metadata server
     }
 
     for(auto it = rets.begin(); it != rets.end(); it++){

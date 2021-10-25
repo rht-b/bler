@@ -130,7 +130,8 @@ const Placement& Client_Node::get_placement(const std::string& key, const bool f
 
 bool Client_Node::getConfigAtMDS(const string& key, Placement& p) {
     if(this->abd != nullptr){
-
+        auto epoch = time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+       
         DPRINTF(DEBUG_ABD_Client, "metadata_server_ip port is %s %s\n", this->abd->get_metadata_server_ip().c_str(), this->abd->get_metadata_server_port().c_str());
 
         Connect c(this->abd->get_metadata_server_ip(), this->abd->get_metadata_server_port());
@@ -170,6 +171,9 @@ bool Client_Node::getConfigAtMDS(const string& key, Placement& p) {
             return false;
         }
 
+        auto epoch2 = time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+        DPRINTF(DEBUG_CLIENT_NODE, "mds getConfig took: %lu\n", (epoch2-epoch));
+
         if(flag){
             status.clear();
             msg.clear();
@@ -188,6 +192,7 @@ bool Client_Node::getConfigAtMDS(const string& key, Placement& p) {
 
 bool Client_Node::recordDoneOprAtMDS() {
     if(this->abd != nullptr){
+        auto epoch = time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
 
         DPRINTF(DEBUG_ABD_Client, "metadata_server_ip port is %s %s\n", this->abd->get_metadata_server_ip().c_str(), this->abd->get_metadata_server_port().c_str());
 
@@ -225,6 +230,9 @@ bool Client_Node::recordDoneOprAtMDS() {
             DPRINTF(DEBUG_CLIENT_NODE, "data_set_fut is not valid\n");
             return false;
         }
+
+        auto epoch2 = time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
+        DPRINTF(DEBUG_CLIENT_NODE, "mds recConfig took: %lu\n", (epoch2-epoch));
 
         if(flag){
             status.clear();

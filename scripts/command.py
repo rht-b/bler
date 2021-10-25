@@ -6,7 +6,7 @@ import threading
 import subprocess
 from subprocess import PIPE
 
-gcloud = "/opt/google-cloud-sdk/bin/gcloud"
+gcloud = "gcloud"
 make = "/usr/bin/make"
 
 
@@ -31,7 +31,7 @@ def read_zones(zones_file_name='zones.txt'):
 
 def start_server(name, machine_type, zone):
     proc = subprocess.run(
-        [gcloud, "compute", "instances", "create", name, "--machine-type=" + machine_type, "--zone=" + zone],
+        [gcloud, "compute", "instances", "create", name, "--machine-type=" + machine_type, "--zone=" + zone, "--tags=http-server,https-server"],
         stdout=PIPE, stderr=PIPE)
     if proc.stderr.decode("utf-8").find("ERROR") != -1 or proc.stdout.decode("utf-8").find("ERROR") != -1:
         print(proc.stdout.decode("utf-8"), "\n---\n", proc.stderr.decode("utf-8"))

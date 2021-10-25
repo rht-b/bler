@@ -402,7 +402,7 @@ def plot_total_cost_per_configuration(configs):
     plt.grid(True)
 
 def draw_latencies_based_on_arrival_rate_for_server(server):
-    arrival_rates = list(range(20, 101, 20))
+    arrival_rates = list(range(20, 21, 20))
 
     put_avg = []
     get_avg = []

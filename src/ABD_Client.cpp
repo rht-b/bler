@@ -237,7 +237,7 @@ int ABD_Client::get_timestamp(const string& key, unique_ptr<Timestamp>& timestam
 
     int le_counter = 0;
     uint64_t le_init = time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    DPRINTF(DEBUG_ABD_Client, "latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
+    DPRINTF(DEBUG_ABD_Client, "get_ts inner latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
 
     // const Placement& p = parent->get_placement(key);
     int op_status = 0;    // 0: Success, -1: timeout
@@ -287,16 +287,16 @@ int ABD_Client::put(const string& key, const string& value){
 
     EASY_LOG_INIT_M(string("on key ") + key);
 
+    int le_counter = 0;
+    uint64_t le_init = time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
+
     // Get placement(configuration) from metadata server and increment the counter
     // const Placement& p = parent->get_placement(key);
     Placement p;
     parent->getConfigAtMDS(key, p);
     EASY_LOG_M("placement received. trying to do phase 1...");
 
-
-    int le_counter = 0;
-    uint64_t le_init = time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
-    DPRINTF(DEBUG_ABD_Client, "latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
+    DPRINTF(DEBUG_ABD_Client, "get_conf latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
 
     int op_status = 0;    // 0: Success, -1: timeout
 
@@ -318,6 +318,8 @@ int ABD_Client::put(const string& key, const string& value){
     }
 
     EASY_LOG_M("timestamp received. Trying to do phase 2...");
+
+    DPRINTF(DEBUG_ABD_Client, "phase 1 fin, get_ts latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
 
     // put
     vector<strVec> ret;
@@ -359,6 +361,8 @@ int ABD_Client::put(const string& key, const string& value){
     // record done operation at metadata server
     assert(parent->recordDoneOprAtMDS());
 
+    DPRINTF(DEBUG_ABD_Client, "record_done operation latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
+
     // DPRINTF(DEBUG_ABD_Client, "fin latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
     return op_status;
 }
@@ -369,14 +373,15 @@ int ABD_Client::get(const string& key, string& value){
 
     EASY_LOG_INIT_M(string("on key ") + key);
 
+    int le_counter = 0;
+    uint64_t le_init = time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
+
     // Get placement(configuration) from metadata server and increment the counter
     // const Placement& p = parent->get_placement(key);
     Placement p;
     parent->getConfigAtMDS(key, p);
     EASY_LOG_M("placement received. trying to do phase 1...");
 
-    int le_counter = 0;
-    uint64_t le_init = time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count();
     DPRINTF(DEBUG_ABD_Client, "latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
     
     value.clear();
@@ -492,6 +497,8 @@ int ABD_Client::get(const string& key, string& value){
 
     // record done operation at metadata server
     assert(parent->recordDoneOprAtMDS());
+
+    DPRINTF(DEBUG_ABD_Client, "record_done operation latencies%d: %lu\n", le_counter++, time_point_cast<chrono::milliseconds>(chrono::system_clock::now()).time_since_epoch().count() - le_init);
 
     return op_status;
 }

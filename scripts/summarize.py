@@ -70,6 +70,34 @@ def main():
 
     write_ops(puts, gets)
 
+    print()
+
+    latGets = []
+    for gOptn in gets:
+        latGets.append(gOptn[2])
+    latGets.sort()
+    # print(latGets)
+    # print(len(latGets))
+    # print(int(len(latGets)*0.99))
+    print("get: 99% = " + str(latGets[int(len(latGets)*0.99)]))
+
+    latPuts = []
+    for pOptn in puts:
+        latPuts.append(pOptn[2])
+    latPuts.sort()
+
+    # print(latPuts)
+    # print(len(latPuts))
+    # print(int(len(latPuts)*0.99))
+    print("put: 99% = " + str(latPuts[int(len(latPuts)*0.99)]))
+
+    print()
+    
+    print("get: avg = " + str(get_total/get_count))
+    print("put: avg = " + str(put_total/put_count))
+
+    print()
+    
     print("put: total = " + str(put_total) + ", count = " + str(put_count))
     print("get: total = " + str(get_total) + ", count = " + str(get_count))
 
